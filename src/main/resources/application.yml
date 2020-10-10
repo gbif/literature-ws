@@ -1,0 +1,6 @@
+elasticsearch:
+  hosts:
+  index: literature
+  connectionTimeOut:
+  socketTimeOut:
+  connectionRequestTimeOut:
