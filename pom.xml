@@ -10,9 +10,9 @@
   </parent>
 
   <groupId>org.gbif.literature</groupId>
-  <artifactId>literature</artifactId>
+  <artifactId>literature-ws</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>literature</name>
+  <name>GBIF Literature WS</name>
 
   <scm>
     <connection>scm:git:git@github.com:gbif/${project.artifactId}.git</connection>
