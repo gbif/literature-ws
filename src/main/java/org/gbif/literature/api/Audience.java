@@ -1,0 +1,11 @@
+package org.gbif.literature.api;
+
+public enum Audience {
+
+  BIODIVERSITY_KNOWLEDGE_EXPERTS,
+  DATA_HOLDERS,
+  DATA_USERS,
+  DECISION_MAKERS,
+  GBIF_NETWORK,
+  PUBLIC_STAKEHOLDERS
+}
