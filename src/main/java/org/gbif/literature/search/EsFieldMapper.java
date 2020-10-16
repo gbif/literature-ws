@@ -8,6 +8,8 @@ public interface EsFieldMapper<P extends SearchParameter> {
 
   String get(P searchParameter);
 
+  P get(String esFieldName);
+
   String[] excludeFields();
 
   default QueryBuilder fullTextQuery(String q) {

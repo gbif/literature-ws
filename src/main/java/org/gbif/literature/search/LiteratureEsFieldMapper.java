@@ -20,6 +20,11 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   }
 
   @Override
+  public LiteratureSearchParameter get(String esField) {
+    return SEARCH_TO_ES_MAPPING.inverse().get(esField);
+  }
+
+  @Override
   public String[] excludeFields() {
     return EXCLUDE_FIELDS;
   }
