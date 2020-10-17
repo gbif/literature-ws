@@ -15,11 +15,37 @@ public class EsConfig {
 
   @Bean
   @Primary
-  public RestHighLevelClient restHighLevelClient(EsClientConfigProperties esClientConfigProperties) {
-    return provideEsClient(esClientConfigProperties);
+  public RestHighLevelClient restHighLevelClient(RestClient restClient) {
+    return new RestHighLevelClient(restClient);
   }
 
-  /** Creates ElasticSearch client using default connection settings. */
+  @Bean
+  @Primary
+  public RestClient elasticsearchRestClient(EsClientConfigProperties properties) {
+    String[] hostsUrl = properties.getHosts().toArray(new String[0]);
+    HttpHost[] hosts = new HttpHost[hostsUrl.length];
+    int i = 0;
+    for (String host : hostsUrl) {
+      try {
+        URL url = new URL(host);
+        hosts[i] = new HttpHost(url.getHost(), url.getPort(), url.getProtocol());
+        i++;
+      } catch (MalformedURLException e) {
+        throw new IllegalArgumentException(e.getMessage(), e);
+      }
+    }
+
+    return RestClient.builder(hosts)
+        .setRequestConfigCallback(
+            requestConfigBuilder ->
+                requestConfigBuilder
+                    .setConnectTimeout(properties.getConnectionTimeOut())
+                    .setSocketTimeout(properties.getSocketTimeOut())
+                    .setConnectionRequestTimeout(
+                        properties.getConnectionRequestTimeOut()))
+        .build();
+  }
+
   public static RestHighLevelClient provideEsClient(EsClientConfigProperties esClientConfigProperties) {
     String[] hostsUrl = esClientConfigProperties.getHosts().toArray(new String[0]);
     HttpHost[] hosts = new HttpHost[hostsUrl.length];
