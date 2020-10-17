@@ -15,10 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.gbif.api.model.common.search.Facet;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -30,6 +26,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
@@ -112,8 +113,8 @@ public class EsResponseParser<T, S, P extends SearchParameter> {
     } else if (aggregation instanceof Filter) {
       return ((Filter) aggregation)
           .getAggregations().asList().stream()
-          .flatMap(agg -> ((Terms) agg).getBuckets().stream())
-          .collect(Collectors.toList());
+              .flatMap(agg -> ((Terms) agg).getBuckets().stream())
+              .collect(Collectors.toList());
     } else {
       throw new IllegalArgumentException(aggregation.getClass() + " aggregation not supported");
     }

@@ -27,8 +27,7 @@ public final class EsQueryUtils {
   private static final int DEFAULT_FACET_OFFSET = 0;
   private static final int DEFAULT_FACET_LIMIT = 10;
 
-  private EsQueryUtils() {
-  }
+  private EsQueryUtils() {}
 
   public static <P extends SearchParameter> int extractFacetLimit(
       FacetedSearchRequest<P> request, P facet) {

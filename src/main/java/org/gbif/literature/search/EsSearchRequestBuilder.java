@@ -15,12 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -30,6 +24,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 public class EsSearchRequestBuilder<P extends SearchParameter> {
 
@@ -67,7 +68,6 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
       buildQuery(groupedParams.queryParams, searchRequest.getQ())
           .ifPresent(searchSourceBuilder::query);
     }
-
 
     return esSearchRequest;
   }

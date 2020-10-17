@@ -15,12 +15,8 @@
  */
 package org.gbif.literature.search;
 
-import org.elasticsearch.search.SearchHit;
 import org.gbif.literature.api.LiteratureSearchResult;
 import org.gbif.literature.api.LiteratureSuggestResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -28,6 +24,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
+import org.elasticsearch.search.SearchHit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 @Component
 public class LiteratureSearchResultConverter

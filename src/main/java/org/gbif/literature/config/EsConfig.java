@@ -56,12 +56,12 @@ public class EsConfig {
                 requestConfigBuilder
                     .setConnectTimeout(properties.getConnectionTimeOut())
                     .setSocketTimeout(properties.getSocketTimeOut())
-                    .setConnectionRequestTimeout(
-                        properties.getConnectionRequestTimeOut()))
+                    .setConnectionRequestTimeout(properties.getConnectionRequestTimeOut()))
         .build();
   }
 
-  public static RestHighLevelClient provideEsClient(EsClientConfigProperties esClientConfigProperties) {
+  public static RestHighLevelClient provideEsClient(
+      EsClientConfigProperties esClientConfigProperties) {
     String[] hostsUrl = esClientConfigProperties.getHosts().toArray(new String[0]);
     HttpHost[] hosts = new HttpHost[hostsUrl.length];
     int i = 0;
