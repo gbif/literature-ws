@@ -15,7 +15,6 @@
  */
 package org.gbif.literature.util;
 
-import com.google.common.base.Strings;
 import org.gbif.api.model.common.paging.Pageable;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -32,6 +31,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Optional;
 import java.util.function.Function;
+
+import com.google.common.base.Strings;
 
 public final class EsQueryUtils {
 
