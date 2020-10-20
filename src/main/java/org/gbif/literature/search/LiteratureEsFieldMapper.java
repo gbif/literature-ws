@@ -47,6 +47,51 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
 
   @Override
   public String[] getMappedFields() {
-    return new String[] {"literatureType"};
+    return new String[]{
+        "title",
+        "authors",
+        "year",
+        "source",
+        "identifiers",
+        "keywords",
+        "websites",
+        "month",
+        "publisher",
+        "day",
+        "id",
+        "created",
+        "accessed",
+        "tags",
+        "read",
+        "starred",
+        "authored",
+        "confirmed",
+        "hidden",
+        "language",
+        "country",
+        "notes",
+        "abstract",
+        "fileAttached",
+        "profileId",
+        "groupId",
+        "updatedAt",
+        "citationKey",
+        "userContext",
+        "privatePublication",
+        "literatureType",
+        "searchable",
+        "createdAt",
+        "countriesOfResearcher",
+        "countriesOfCoverage",
+        "gbifRegion",
+        "gbifDatasetKey",
+        "publishingOrganizationKey",
+        "relevance",
+        "topics",
+        "gbifDownloadKey",
+        "peerReview",
+        "openAccess",
+        "contentType"
+    };
   }
 }

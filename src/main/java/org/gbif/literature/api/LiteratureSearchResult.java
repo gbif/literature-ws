@@ -16,33 +16,43 @@
 package org.gbif.literature.api;
 
 import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.GbifRegion;
 import org.gbif.api.vocabulary.Language;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@SuppressWarnings("unused")
 public class LiteratureSearchResult {
 
-  private String abstr; // TODO: 16/10/2020 "abstract"
+  private String abstr;
   private String accessed;
   private boolean authored;
-  private List<String> authors;
+  private List<Map<String, Object>> authors = new ArrayList<>();
   private boolean confirmed;
   private String contentType;
-  private List<Country> countriesOfCoverage;
-  private List<Country> countriesOfResearcher;
+  private Set<Country> countriesOfCoverage = new HashSet<>();
+  private Set<Country> countriesOfResearcher = new HashSet<>();
   private Country country;
   private Date created;
   private Date createdAt;
   private Integer day;
   private boolean fileAttached;
-  private List<String> gbifDownloadKey;
-  private List<String> gbifRegion;
+  private List<String> gbifDownloadKey = new ArrayList<>();
+  private Set<GbifRegion> gbifRegion = new HashSet<>();
   private UUID groupId;
-  private Map<String, String> identifiers;
-  private List<String> keywords;
+  private Boolean hidden;
+  private UUID id;
+  private Map<String, Object> identifiers = new HashMap<>();
+  private List<String> keywords = new ArrayList<>();
   private Language language;
   private LiteratureType literatureType;
   private Integer month;
@@ -53,18 +63,19 @@ public class LiteratureSearchResult {
   private UUID profileId;
   private String publisher;
   private boolean read;
-  private List<Relevance> relevance;
+  private Set<Relevance> relevance = new HashSet<>();
   private boolean searchable;
   private String source;
   private boolean starred;
-  private List<String> tags;
+  private List<String> tags = new ArrayList<>();
   private String title;
-  private List<Topic> topics;
+  private Set<Topic> topics = new HashSet<>();
   private Date updatedAt;
   private String userContext;
-  private List<String> websites;
+  private List<String> websites = new ArrayList<>();
   private Integer year;
 
+  @JsonProperty("abstract")
   public String getAbstr() {
     return abstr;
   }
@@ -89,11 +100,11 @@ public class LiteratureSearchResult {
     this.authored = authored;
   }
 
-  public List<String> getAuthors() {
+  public List<Map<String, Object>> getAuthors() {
     return authors;
   }
 
-  public void setAuthors(List<String> authors) {
+  public void setAuthors(List<Map<String, Object>> authors) {
     this.authors = authors;
   }
 
@@ -113,19 +124,19 @@ public class LiteratureSearchResult {
     this.contentType = contentType;
   }
 
-  public List<Country> getCountriesOfCoverage() {
+  public Set<Country> getCountriesOfCoverage() {
     return countriesOfCoverage;
   }
 
-  public void setCountriesOfCoverage(List<Country> countriesOfCoverage) {
+  public void setCountriesOfCoverage(Set<Country> countriesOfCoverage) {
     this.countriesOfCoverage = countriesOfCoverage;
   }
 
-  public List<Country> getCountriesOfResearcher() {
+  public Set<Country> getCountriesOfResearcher() {
     return countriesOfResearcher;
   }
 
-  public void setCountriesOfResearcher(List<Country> countriesOfResearcher) {
+  public void setCountriesOfResearcher(Set<Country> countriesOfResearcher) {
     this.countriesOfResearcher = countriesOfResearcher;
   }
 
@@ -177,11 +188,11 @@ public class LiteratureSearchResult {
     this.gbifDownloadKey = gbifDownloadKey;
   }
 
-  public List<String> getGbifRegion() {
+  public Set<GbifRegion> getGbifRegion() {
     return gbifRegion;
   }
 
-  public void setGbifRegion(List<String> gbifRegion) {
+  public void setGbifRegion(Set<GbifRegion> gbifRegion) {
     this.gbifRegion = gbifRegion;
   }
 
@@ -193,11 +204,27 @@ public class LiteratureSearchResult {
     this.groupId = groupId;
   }
 
-  public Map<String, String> getIdentifiers() {
+  public Boolean getHidden() {
+    return hidden;
+  }
+
+  public void setHidden(Boolean hidden) {
+    this.hidden = hidden;
+  }
+
+  public UUID getId() {
+    return id;
+  }
+
+  public void setId(UUID id) {
+    this.id = id;
+  }
+
+  public Map<String, Object> getIdentifiers() {
     return identifiers;
   }
 
-  public void setIdentifiers(Map<String, String> identifiers) {
+  public void setIdentifiers(Map<String, Object> identifiers) {
     this.identifiers = identifiers;
   }
 
@@ -289,11 +316,11 @@ public class LiteratureSearchResult {
     this.read = read;
   }
 
-  public List<Relevance> getRelevance() {
+  public Set<Relevance> getRelevance() {
     return relevance;
   }
 
-  public void setRelevance(List<Relevance> relevance) {
+  public void setRelevance(Set<Relevance> relevance) {
     this.relevance = relevance;
   }
 
@@ -337,11 +364,11 @@ public class LiteratureSearchResult {
     this.title = title;
   }
 
-  public List<Topic> getTopics() {
+  public Set<Topic> getTopics() {
     return topics;
   }
 
-  public void setTopics(List<Topic> topics) {
+  public void setTopics(Set<Topic> topics) {
     this.topics = topics;
   }
 
