@@ -22,6 +22,8 @@ import org.gbif.api.model.common.search.SearchParameter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
 import java.time.Year;
 import java.time.YearMonth;
 import java.time.ZoneOffset;
@@ -38,6 +40,9 @@ public final class EsQueryUtils {
   // defaults
   private static final int DEFAULT_FACET_OFFSET = 0;
   private static final int DEFAULT_FACET_LIMIT = 10;
+
+  public static final String RANGE_SEPARATOR = ",";
+  public static final String RANGE_WILDCARD = "*";
 
   private static final DateTimeFormatter FORMATTER =
       DateTimeFormatter.ofPattern(
@@ -95,6 +100,57 @@ public final class EsQueryUtils {
         }
 
         return dateParsed;
+      };
+
+  public static final Function<String, LocalDateTime> LOWER_BOUND_RANGE_PARSER =
+      lowerBound -> {
+        if (Strings.isNullOrEmpty(lowerBound) || RANGE_WILDCARD.equalsIgnoreCase(lowerBound)) {
+          return null;
+        }
+
+        TemporalAccessor temporalAccessor =
+            FORMATTER.parseBest(lowerBound, LocalDate::from, YearMonth::from, Year::from);
+
+        if (temporalAccessor instanceof LocalDate) {
+          return ((LocalDate) temporalAccessor).atTime(LocalTime.MIN);
+        }
+
+        if (temporalAccessor instanceof Year) {
+          return Year.from(temporalAccessor).atMonth(Month.JANUARY).atDay(1).atTime(LocalTime.MIN);
+        }
+
+        if (temporalAccessor instanceof YearMonth) {
+          return YearMonth.from(temporalAccessor).atDay(1).atTime(LocalTime.MIN);
+        }
+
+        return null;
+      };
+
+  public static final Function<String, LocalDateTime> UPPER_BOUND_RANGE_PARSER =
+      upperBound -> {
+        if (Strings.isNullOrEmpty(upperBound) || RANGE_WILDCARD.equalsIgnoreCase(upperBound)) {
+          return null;
+        }
+
+        TemporalAccessor temporalAccessor =
+            FORMATTER.parseBest(upperBound, LocalDate::from, YearMonth::from, Year::from);
+
+        if (temporalAccessor instanceof LocalDate) {
+          return ((LocalDate) temporalAccessor).atTime(LocalTime.MAX);
+        }
+
+        if (temporalAccessor instanceof Year) {
+          return Year.from(temporalAccessor)
+              .atMonth(Month.DECEMBER)
+              .atEndOfMonth()
+              .atTime(LocalTime.MAX);
+        }
+
+        if (temporalAccessor instanceof YearMonth) {
+          return YearMonth.from(temporalAccessor).atEndOfMonth().atTime(LocalTime.MAX);
+        }
+
+        return null;
       };
 
   private EsQueryUtils() {}

@@ -15,15 +15,24 @@
  */
 package org.gbif.literature.search;
 
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
+import org.gbif.api.util.VocabularyUtils;
+import org.gbif.api.vocabulary.Country;
 import org.gbif.common.shaded.com.google.common.annotations.VisibleForTesting;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
@@ -31,6 +40,12 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+
+import static org.gbif.api.util.SearchTypeValidator.isRange;
+import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
+import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
+import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
+import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
 
 public class EsSearchRequestBuilder<P extends SearchParameter> {
 
@@ -83,10 +98,90 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     if (params != null && !params.isEmpty()) {
       // adding term queries to bool
-      // TODO: 16/10/2020
+      bool.filter()
+          .addAll(
+              params.entrySet().stream()
+                  .filter(e -> Objects.nonNull(esFieldMapper.get(e.getKey())))
+                  .flatMap(
+                      e ->
+                          buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
+                              .stream())
+                  .collect(Collectors.toList()));
     }
 
     return bool.must().isEmpty() && bool.filter().isEmpty() ? Optional.empty() : Optional.of(bool);
+  }
+
+  private List<QueryBuilder> buildTermQuery(Collection<String> values, P param, String esField) {
+    List<QueryBuilder> queries = new ArrayList<>();
+
+    // collect queries for each value
+    List<String> parsedValues = new ArrayList<>();
+    for (String value : values) {
+      if (isRange(value)) {
+        queries.add(buildRangeQuery(esField, value));
+        continue;
+      }
+
+      parsedValues.add(parseParamValue(value, param));
+    }
+
+    if (parsedValues.size() == 1) {
+      // single term
+      queries.add(QueryBuilders.termQuery(esField, parsedValues.get(0)));
+    } else if (parsedValues.size() > 1) {
+      // multi term query
+      queries.add(QueryBuilders.termsQuery(esField, parsedValues));
+    }
+
+    return queries;
+  }
+
+  private RangeQueryBuilder buildRangeQuery(String esField, String value) {
+    RangeQueryBuilder builder = QueryBuilders.rangeQuery(esField);
+
+    if (esFieldMapper.isDateField(esField)) {
+      String[] values = value.split(RANGE_SEPARATOR);
+
+      LocalDateTime lowerBound = LOWER_BOUND_RANGE_PARSER.apply(values[0]);
+      if (lowerBound != null) {
+        builder.gte(lowerBound);
+      }
+
+      LocalDateTime upperBound = UPPER_BOUND_RANGE_PARSER.apply(values[1]);
+      if (upperBound != null) {
+        builder.lte(upperBound);
+      }
+    } else {
+      String[] values = value.split(RANGE_SEPARATOR);
+      if (!RANGE_WILDCARD.equals(values[0])) {
+        builder.gte(values[0]);
+      }
+      if (!RANGE_WILDCARD.equals(values[1])) {
+        builder.lte(values[1]);
+      }
+    }
+
+    return builder;
+  }
+
+  private String parseParamValue(String value, P parameter) {
+    if (Enum.class.isAssignableFrom(parameter.type())) {
+      if (!Country.class.isAssignableFrom(parameter.type())) {
+        return VocabularyUtils.lookup(value, (Class<Enum<?>>) parameter.type())
+            .map(Enum::name)
+            .orElse(null);
+      } else {
+        return VocabularyUtils.lookup(value, Country.class)
+            .map(Country::getIso2LetterCode)
+            .orElse(value);
+      }
+    }
+
+    if (Boolean.class.isAssignableFrom(parameter.type())) {
+      return value.toLowerCase();
+    }
+    return value;
   }
 
   @VisibleForTesting

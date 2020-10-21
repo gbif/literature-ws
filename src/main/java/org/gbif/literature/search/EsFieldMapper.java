@@ -28,6 +28,8 @@ public interface EsFieldMapper<P extends SearchParameter> {
 
   String[] excludeFields();
 
+  boolean isDateField(String esFieldName);
+
   default QueryBuilder fullTextQuery(String q) {
     return QueryBuilders.matchQuery("all", q);
   }
