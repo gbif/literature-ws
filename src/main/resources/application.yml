@@ -1,3 +1,6 @@
+spring:
+  application:
+    name: literature-ws
 elasticsearch:
   hosts: http://cms-search.gbif.org:9200/
   index: literature
