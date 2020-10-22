@@ -1,6 +1,6 @@
 elasticsearch:
-  hosts:
+  hosts: http://cms-search.gbif.org:9200/
   index: literature
-  connectionTimeOut:
-  socketTimeOut:
-  connectionRequestTimeOut:
+  connectionTimeOut: 60000
+  socketTimeOut: 60000
+  connectionRequestTimeOut: 120000
