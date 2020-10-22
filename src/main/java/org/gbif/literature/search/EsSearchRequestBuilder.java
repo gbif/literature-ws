@@ -15,7 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -39,6 +38,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import static org.gbif.api.util.SearchTypeValidator.isRange;
