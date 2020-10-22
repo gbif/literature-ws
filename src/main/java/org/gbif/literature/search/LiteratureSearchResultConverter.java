@@ -21,6 +21,9 @@ import org.gbif.api.vocabulary.GbifRegion;
 import org.gbif.api.vocabulary.Language;
 import org.gbif.literature.api.LiteratureSearchResult;
 import org.gbif.literature.api.LiteratureSuggestResult;
+import org.gbif.literature.api.LiteratureType;
+import org.gbif.literature.api.Relevance;
+import org.gbif.literature.api.Topic;
 
 import java.util.Date;
 import java.util.List;
@@ -34,9 +37,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.elasticsearch.search.SearchHit;
-import org.gbif.literature.api.LiteratureType;
-import org.gbif.literature.api.Relevance;
-import org.gbif.literature.api.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -112,8 +112,7 @@ public class LiteratureSearchResultConverter
     return getValue(fields, esField, Function.identity());
   }
 
-  private static Optional<Integer> getIntegerValue(
-      Map<String, Object> fields, String esField) {
+  private static Optional<Integer> getIntegerValue(Map<String, Object> fields, String esField) {
     return getValue(fields, esField, Integer::valueOf);
   }
 
@@ -133,8 +132,7 @@ public class LiteratureSearchResultConverter
     return getValue(fields, esField, Country::fromIsoCode);
   }
 
-  private static Optional<Language> getLanguageValue(
-      Map<String, Object> fields, String esField) {
+  private static Optional<Language> getLanguageValue(Map<String, Object> fields, String esField) {
     return getValue(fields, esField, Language::fromIsoCode);
   }
 
@@ -144,7 +142,8 @@ public class LiteratureSearchResultConverter
         .filter(v -> !v.isEmpty());
   }
 
-  private static Optional<Map<String, Object>> getMapValue(Map<String, Object> fields, String esField) {
+  private static Optional<Map<String, Object>> getMapValue(
+      Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
         .map(v -> (Map<String, Object>) v)
         .filter(v -> !v.isEmpty());
@@ -168,7 +167,8 @@ public class LiteratureSearchResultConverter
 
   private static Optional<LiteratureType> getLiteratureTypeValue(
       Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureType.class));
+    return getValue(
+        fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureType.class));
   }
 
   private static Optional<Set<Relevance>> getRelevanceSetValue(
@@ -176,15 +176,22 @@ public class LiteratureSearchResultConverter
     return Optional.ofNullable(fields.get(esField))
         .map(v -> (List<String>) v)
         .filter(v -> !v.isEmpty())
-        .map(v -> v.stream().map(value -> VocabularyUtils.lookupEnum(value, Relevance.class)).collect(Collectors.toSet()));
+        .map(
+            v ->
+                v.stream()
+                    .map(value -> VocabularyUtils.lookupEnum(value, Relevance.class))
+                    .collect(Collectors.toSet()));
   }
 
-  private static Optional<Set<Topic>> getTopicSetValue(
-      Map<String, Object> fields, String esField) {
+  private static Optional<Set<Topic>> getTopicSetValue(Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
         .map(v -> (List<String>) v)
         .filter(v -> !v.isEmpty())
-        .map(v -> v.stream().map(value -> VocabularyUtils.lookupEnum(value, Topic.class)).collect(Collectors.toSet()));
+        .map(
+            v ->
+                v.stream()
+                    .map(value -> VocabularyUtils.lookupEnum(value, Topic.class))
+                    .collect(Collectors.toSet()));
   }
 
   private static Optional<List<Map<String, Object>>> getObjectsListValue(
