@@ -18,20 +18,22 @@ package org.gbif.literature.api;
 import org.gbif.api.model.common.search.SearchParameter;
 import org.gbif.api.vocabulary.Country;
 
+import java.util.UUID;
+
 public enum LiteratureSearchParameter implements SearchParameter {
-  COUNTRY_OR_AREA_OF_RESEARCHER(Country.class),
-  COUNTRY_OR_AREA_OF_COVERAGE(Country.class),
+  COUNTRIES_OF_RESEARCHER(Country.class),
+  COUNTRIES_OF_COVERAGE(Country.class),
   LITERATURE_TYPE(LiteratureType.class),
   RELEVANCE(Relevance.class),
   YEAR(Integer.class),
-  TOPIC(Topic.class),
-  DATASET(String.class),
-  PUBLISHER(String.class),
-  PEER_REVIEWED(Boolean.class),
+  TOPICS(Topic.class),
+  GBIF_DATASET_KEY(UUID.class), // dataset
+  PUBLISHING_ORGANIZATION_KEY(UUID.class), // publisher
+  PEER_REVIEW(Boolean.class),
   OPEN_ACCESS(Boolean.class),
-  DOWNLOAD_KEY(String.class),
-  JOURNAL(String.class),
-  JOURNAL_PUBLISHER(String.class);
+  GBIF_DOWNLOAD_KEY(String.class), // download key
+  SOURCE(String.class), // journal
+  PUBLISHER(String.class); // journal publisher
 
   private final Class<?> type;
 
