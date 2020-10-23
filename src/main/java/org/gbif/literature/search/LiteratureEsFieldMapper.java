@@ -29,7 +29,16 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
 
   private static final ImmutableBiMap<LiteratureSearchParameter, String> SEARCH_TO_ES_MAPPING =
       ImmutableBiMap.<LiteratureSearchParameter, String>builder()
+          .put(LiteratureSearchParameter.COUNTRY_OR_AREA_OF_RESEARCHER, "countriesOfResearcher")
+          .put(LiteratureSearchParameter.COUNTRY_OR_AREA_OF_COVERAGE, "countriesOfCoverage")
           .put(LiteratureSearchParameter.LITERATURE_TYPE, "literatureType")
+          .put(LiteratureSearchParameter.RELEVANCE, "relevance")
+          .put(LiteratureSearchParameter.YEAR, "year")
+          .put(LiteratureSearchParameter.TOPIC, "topics")
+          .put(LiteratureSearchParameter.PUBLISHER, "publisher")
+          .put(LiteratureSearchParameter.PEER_REVIEWED, "peerReview")
+          .put(LiteratureSearchParameter.OPEN_ACCESS, "openAccess")
+          .put(LiteratureSearchParameter.DOWNLOAD_KEY, "gbifDownloadKey")
           .build();
 
   private static final String[] EXCLUDE_FIELDS = new String[] {"all"};
