@@ -15,11 +15,17 @@
  */
 package org.gbif.literature.config;
 
+import org.gbif.ws.json.JacksonJsonObjectMapperProvider;
+
 import java.util.List;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
@@ -27,5 +33,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
   @Override
   public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
     argumentResolvers.add(new LiteratureSearchRequestHandlerMethodArgumentResolver());
+  }
+
+  @Primary
+  @Bean
+  public ObjectMapper registryObjectMapper() {
+    return JacksonJsonObjectMapperProvider.getObjectMapper();
   }
 }
