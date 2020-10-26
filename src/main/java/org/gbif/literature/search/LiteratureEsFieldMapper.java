@@ -17,12 +17,16 @@ package org.gbif.literature.search;
 
 import org.gbif.common.shaded.com.google.common.collect.ImmutableBiMap;
 import org.gbif.literature.api.LiteratureSearchParameter;
+import org.gbif.literature.api.LiteratureType;
+import org.gbif.literature.api.Relevance;
+import org.gbif.literature.api.Topic;
 
 import java.util.List;
-
-import org.springframework.stereotype.Component;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import org.springframework.stereotype.Component;
 
 @Component
 public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchParameter> {
@@ -44,10 +48,16 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put(LiteratureSearchParameter.GBIF_DOWNLOAD_KEY, "gbifDownloadKey")
           .build();
 
+  public static final Map<String, Integer> CARDINALITIES =
+      ImmutableMap.<String, Integer>builder()
+          .put("literatureType", LiteratureType.values().length)
+          .put("relevance", Relevance.values().length)
+          .put("topics", Topic.values().length)
+          .build();
+
   private static final String[] EXCLUDE_FIELDS = new String[] {"all"};
 
-  public static final List<String> DATE_FIELDS =
-      ImmutableList.of("created", "createdAt", "updatedAt");
+  public static final List<String> DATE_FIELDS = ImmutableList.of("created", "createdAt", "updatedAt");
 
   @Override
   public String get(LiteratureSearchParameter searchParameter) {
@@ -57,6 +67,11 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   @Override
   public LiteratureSearchParameter get(String esField) {
     return SEARCH_TO_ES_MAPPING.inverse().get(esField);
+  }
+
+  @Override
+  public Integer getCardinality(String esFieldName) {
+    return CARDINALITIES.get(esFieldName);
   }
 
   @Override

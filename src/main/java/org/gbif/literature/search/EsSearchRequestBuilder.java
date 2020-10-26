@@ -20,7 +20,7 @@ import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
-import org.gbif.common.shaded.com.google.common.annotations.VisibleForTesting;
+import org.gbif.literature.api.LiteratureType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,9 +36,13 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import static org.gbif.api.util.SearchTypeValidator.isRange;
@@ -46,8 +50,12 @@ import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
 import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
+import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
+import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
 
 public class EsSearchRequestBuilder<P extends SearchParameter> {
+
+  private static final int MAX_SIZE_TERMS_AGGS = 1200000;
 
   private final EsFieldMapper<P> esFieldMapper;
 
@@ -84,7 +92,126 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
           .ifPresent(searchSourceBuilder::query);
     }
 
+    // add aggs
+    buildAggs(searchRequest, groupedParams.postFilterParams, facetsEnabled)
+        .ifPresent(aggsList -> aggsList.forEach(searchSourceBuilder::aggregation));
+
     return esSearchRequest;
+  }
+
+  private Optional<List<AggregationBuilder>> buildAggs(
+      FacetedSearchRequest<P> searchRequest,
+      Map<P, Set<String>> postFilterParams,
+      boolean facetsEnabled) {
+    if (!facetsEnabled
+        || searchRequest.getFacets() == null
+        || searchRequest.getFacets().isEmpty()) {
+      return Optional.empty();
+    }
+
+    if (searchRequest.isMultiSelectFacets()
+        && postFilterParams != null
+        && !postFilterParams.isEmpty()) {
+      return Optional.of(buildFacetsMultiselect(searchRequest, postFilterParams));
+    }
+
+    return Optional.of(buildFacets(searchRequest));
+  }
+
+  private List<AggregationBuilder> buildFacetsMultiselect(
+      FacetedSearchRequest<P> searchRequest, Map<P, Set<String>> postFilterParams) {
+
+    if (searchRequest.getFacets().size() == 1) {
+      // same case as normal facets
+      return buildFacets(searchRequest);
+    }
+
+    return searchRequest.getFacets().stream()
+        .filter(p -> esFieldMapper.get(p) != null)
+        .map(
+            facetParam -> {
+              // build filter aggs
+              BoolQueryBuilder bool = QueryBuilders.boolQuery();
+              bool.filter()
+                  .addAll(
+                      postFilterParams.entrySet().stream()
+                          .filter(entry -> entry.getKey() != facetParam)
+                          .flatMap(
+                              e ->
+                                  buildTermQuery(
+                                      e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
+                                      .stream())
+                          .collect(Collectors.toList()));
+
+              // add filter to the aggs
+              String esField = esFieldMapper.get(facetParam);
+              FilterAggregationBuilder filterAggs = AggregationBuilders.filter(esField, bool);
+
+              // build terms aggs and add it to the filter aggs
+              TermsAggregationBuilder termsAggs =
+                  buildTermsAggs(
+                      "filtered_" + esField,
+                      esField,
+                      extractFacetOffset(searchRequest, facetParam),
+                      extractFacetLimit(searchRequest, facetParam),
+                      searchRequest.getFacetMinCount());
+              filterAggs.subAggregation(termsAggs);
+
+              return filterAggs;
+            })
+        .collect(Collectors.toList());
+  }
+
+  private List<AggregationBuilder> buildFacets(FacetedSearchRequest<P> searchRequest) {
+    return searchRequest.getFacets().stream()
+        .filter(p -> esFieldMapper.get(p) != null)
+        .map(
+            facetParam -> {
+              String esField = esFieldMapper.get(facetParam);
+              return buildTermsAggs(
+                  esField,
+                  esField,
+                  extractFacetOffset(searchRequest, facetParam),
+                  extractFacetLimit(searchRequest, facetParam),
+                  searchRequest.getFacetMinCount());
+            })
+        .collect(Collectors.toList());
+  }
+
+  private TermsAggregationBuilder buildTermsAggs(
+      String aggsName, String esField, int facetOffset, int facetLimit, Integer minCount) {
+    // build aggs for the field
+    TermsAggregationBuilder termsAggsBuilder = AggregationBuilders.terms(aggsName).field(esField);
+
+    // min count
+    Optional.ofNullable(minCount).ifPresent(termsAggsBuilder::minDocCount);
+
+    // aggs size
+    int size = calculateAggsSize(esField, facetOffset, facetLimit);
+    termsAggsBuilder.size(size);
+
+    // aggs shard size
+    /*
+    termsAggsBuilder.shardSize(
+        Optional.ofNullable(esFieldMapper.getCardinality(esField))
+            .orElse(DEFAULT_SHARD_SIZE.applyAsInt(size)));
+    */
+    return termsAggsBuilder;
+  }
+
+  private int calculateAggsSize(String esField, int facetOffset, int facetLimit) {
+    int maxCardinality =
+        Optional.ofNullable(esFieldMapper.getCardinality(esField)).orElse(Integer.MAX_VALUE);
+
+    // the limit is bounded by the max cardinality of the field
+    int limit = Math.min(facetOffset + facetLimit, maxCardinality);
+
+    // we set a maximum limit for performance reasons
+    if (limit > MAX_SIZE_TERMS_AGGS) {
+      throw new IllegalArgumentException(
+          "Facets paging is only supported up to " + MAX_SIZE_TERMS_AGGS + " elements");
+    }
+    return limit;
   }
 
   private Optional<QueryBuilder> buildQuery(Map<P, Set<String>> params, String qParam) {
@@ -189,7 +316,6 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     return value;
   }
 
-  @VisibleForTesting
   GroupedParams<P> groupParameters(FacetedSearchRequest<P> searchRequest) {
     GroupedParams<P> groupedParams = new GroupedParams<P>();
 
@@ -217,7 +343,6 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     return groupedParams;
   }
 
-  @VisibleForTesting
   static class GroupedParams<P extends SearchParameter> {
     Map<P, Set<String>> postFilterParams;
     Map<P, Set<String>> queryParams;

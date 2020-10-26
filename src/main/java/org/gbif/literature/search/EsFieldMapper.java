@@ -26,6 +26,8 @@ public interface EsFieldMapper<P extends SearchParameter> {
 
   P get(String esFieldName);
 
+  Integer getCardinality(String esFieldName);
+
   String[] excludeFields();
 
   boolean isDateField(String esFieldName);
