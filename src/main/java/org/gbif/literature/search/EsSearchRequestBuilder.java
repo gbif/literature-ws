@@ -95,7 +95,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     // sort
     if (Strings.isNullOrEmpty(searchRequest.getQ())) {
-      for (SortBuilder sb : esFieldMapper.sorts()) {
+      for (SortBuilder<?> sb : esFieldMapper.sorts()) {
         searchSourceBuilder.sort(sb);
       }
     } else {
