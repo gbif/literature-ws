@@ -54,7 +54,8 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
       return esResponseParser.buildSearchResponse(
-          restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT), literatureSearchRequest);
+          restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT),
+          literatureSearchRequest);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }

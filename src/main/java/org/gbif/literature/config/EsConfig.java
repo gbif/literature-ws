@@ -56,8 +56,7 @@ public class EsConfig {
                     requestConfigBuilder
                         .setConnectTimeout(esProperties.getConnectionTimeOut())
                         .setSocketTimeout(esProperties.getSocketTimeOut())
-                        .setConnectionRequestTimeout(
-                            esProperties.getConnectionRequestTimeOut()))
+                        .setConnectionRequestTimeout(esProperties.getConnectionRequestTimeOut()))
             .setNodeSelector(NodeSelector.SKIP_DEDICATED_MASTERS));
   }
 }
