@@ -15,6 +15,10 @@
  */
 package org.gbif.literature.search;
 
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.gbif.common.shaded.com.google.common.collect.ImmutableBiMap;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureType;
@@ -56,6 +60,11 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put("topics", Topic.values().length)
           .build();
 
+  private static final FieldSortBuilder[] SORT =
+      new FieldSortBuilder[] {
+          SortBuilders.fieldSort("created").order(SortOrder.DESC)
+      };
+
   private static final String[] EXCLUDE_FIELDS = new String[] {"all"};
 
   public static final List<String> DATE_FIELDS =
@@ -79,6 +88,11 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   @Override
   public String[] excludeFields() {
     return EXCLUDE_FIELDS;
+  }
+
+  @Override
+  public SortBuilder<? extends SortBuilder>[] sorts() {
+    return SORT;
   }
 
   @Override

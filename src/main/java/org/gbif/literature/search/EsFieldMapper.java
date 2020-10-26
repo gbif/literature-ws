@@ -19,6 +19,7 @@ import org.gbif.api.model.common.search.SearchParameter;
 
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.sort.SortBuilder;
 
 public interface EsFieldMapper<P extends SearchParameter> {
 
@@ -29,6 +30,8 @@ public interface EsFieldMapper<P extends SearchParameter> {
   Integer getCardinality(String esFieldName);
 
   String[] excludeFields();
+
+  SortBuilder<? extends SortBuilder>[] sorts();
 
   boolean isDateField(String esFieldName);
 

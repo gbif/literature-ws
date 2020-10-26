@@ -15,6 +15,10 @@
  */
 package org.gbif.literature.search;
 
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -56,8 +60,20 @@ import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
 public class EsSearchRequestBuilder<P extends SearchParameter> {
 
   private static final int MAX_SIZE_TERMS_AGGS = 1200000;
+  private static final String PRE_HL_TAG = "<em class=\"gbifHl\">";
+  private static final String POST_HL_TAG = "</em>";
 
   private final EsFieldMapper<P> esFieldMapper;
+
+  private final HighlightBuilder highlightBuilder =
+      new HighlightBuilder()
+          .forceSource(true)
+          .preTags(PRE_HL_TAG)
+          .postTags(POST_HL_TAG)
+          .encoder("html")
+          .highlighterType("unified")
+          .requireFieldMatch(false)
+          .numOfFragments(0);
 
   public EsSearchRequestBuilder(EsFieldMapper<P> esFieldMapper) {
     this.esFieldMapper = esFieldMapper;
@@ -78,7 +94,16 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     searchSourceBuilder.from((int) searchRequest.getOffset());
 
     // sort
-    // TODO: 16/10/2020
+    if (Strings.isNullOrEmpty(searchRequest.getQ())) {
+      for (SortBuilder sb : esFieldMapper.sorts()) {
+        searchSourceBuilder.sort(sb);
+      }
+    } else {
+      searchSourceBuilder.sort(SortBuilders.scoreSort());
+      if (searchRequest.isHighlight()) {
+        searchSourceBuilder.highlighter(highlightBuilder);
+      }
+    }
 
     // group params
     GroupedParams<P> groupedParams = groupParameters(searchRequest);
@@ -96,7 +121,28 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     buildAggs(searchRequest, groupedParams.postFilterParams, facetsEnabled)
         .ifPresent(aggsList -> aggsList.forEach(searchSourceBuilder::aggregation));
 
+    // post-filter
+    buildPostFilter(groupedParams.postFilterParams).ifPresent(searchSourceBuilder::postFilter);
+
     return esSearchRequest;
+  }
+
+  private Optional<QueryBuilder> buildPostFilter(Map<P, Set<String>> postFilterParams) {
+    if (postFilterParams == null || postFilterParams.isEmpty()) {
+      return Optional.empty();
+    }
+
+    BoolQueryBuilder bool = QueryBuilders.boolQuery();
+    bool.filter()
+        .addAll(
+            postFilterParams.entrySet().stream()
+                .flatMap(
+                    e ->
+                        buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
+                            .stream())
+                .collect(Collectors.toList()));
+
+    return Optional.of(bool);
   }
 
   private Optional<List<AggregationBuilder>> buildAggs(
