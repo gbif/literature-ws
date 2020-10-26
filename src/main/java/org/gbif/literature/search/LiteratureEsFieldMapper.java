@@ -15,10 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.gbif.common.shaded.com.google.common.collect.ImmutableBiMap;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureType;
@@ -159,16 +155,16 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   @Override
   public QueryBuilder fullTextQuery(String q) {
     return new FunctionScoreQueryBuilder(
-        QueryBuilders.multiMatchQuery(q)
-            .field("title", 20.0f)
-            .field("keywords", 15.0f)
-            .field("abstract", 10.0f)
-            .field("publisher", 8.0f)
-            .field("source", 5.0f)
-            .field("all", 1.0f)
-            .tieBreaker(0.2f)
-            .minimumShouldMatch("25%")
-            .slop(100))
+            QueryBuilders.multiMatchQuery(q)
+                .field("title", 20.0f)
+                .field("keywords", 15.0f)
+                .field("abstract", 10.0f)
+                .field("publisher", 8.0f)
+                .field("source", 5.0f)
+                .field("all", 1.0f)
+                .tieBreaker(0.2f)
+                .minimumShouldMatch("25%")
+                .slop(100))
         .boostMode(CombineFunction.MULTIPLY);
   }
 }
