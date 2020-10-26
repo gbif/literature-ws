@@ -15,10 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.gbif.common.shaded.com.google.common.collect.ImmutableBiMap;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureType;
@@ -28,6 +24,10 @@ import org.gbif.literature.api.Topic;
 import java.util.List;
 import java.util.Map;
 
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
@@ -61,9 +61,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .build();
 
   private static final FieldSortBuilder[] SORT =
-      new FieldSortBuilder[] {
-          SortBuilders.fieldSort("created").order(SortOrder.DESC)
-      };
+      new FieldSortBuilder[] {SortBuilders.fieldSort("created").order(SortOrder.DESC)};
 
   private static final String[] EXCLUDE_FIELDS = new String[] {"all"};
 
