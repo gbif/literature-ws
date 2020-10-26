@@ -167,14 +167,19 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
   private String parseParamValue(String value, P parameter) {
     if (Enum.class.isAssignableFrom(parameter.type())) {
-      if (!Country.class.isAssignableFrom(parameter.type())) {
-        return VocabularyUtils.lookup(value, (Class<Enum<?>>) parameter.type())
-            .map(Enum::name)
-            .orElse(null);
-      } else {
+      if (Country.class.isAssignableFrom(parameter.type())) {
         return VocabularyUtils.lookup(value, Country.class)
             .map(Country::getIso2LetterCode)
             .orElse(value);
+      } else if (LiteratureType.class.isAssignableFrom(parameter.type())) {
+        return VocabularyUtils.lookup(value, LiteratureType.class)
+            .map(Enum::name)
+            .map(String::toLowerCase)
+            .orElse(value);
+      } else {
+        return VocabularyUtils.lookup(value, (Class<Enum<?>>) parameter.type())
+            .map(Enum::name)
+            .orElse(null);
       }
     }
 
