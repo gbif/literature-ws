@@ -24,9 +24,10 @@ import org.gbif.literature.api.Topic;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.springframework.stereotype.Component;
 
 @Component
 public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchParameter> {
@@ -57,7 +58,8 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
 
   private static final String[] EXCLUDE_FIELDS = new String[] {"all"};
 
-  public static final List<String> DATE_FIELDS = ImmutableList.of("created", "createdAt", "updatedAt");
+  public static final List<String> DATE_FIELDS =
+      ImmutableList.of("created", "createdAt", "updatedAt");
 
   @Override
   public String get(LiteratureSearchParameter searchParameter) {
