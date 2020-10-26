@@ -2,7 +2,7 @@ spring:
   application:
     name: literature-ws
 elasticsearch:
-  hosts: http://cms-search.gbif.org:9200/
+  hosts: http://cms-search.gbif-dev.org:9200/
   index: literature
   connectionTimeOut: 60000
   socketTimeOut: 60000

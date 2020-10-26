@@ -56,7 +56,7 @@ public class EsResponseParser<T, S, P extends SearchParameter> {
       SearchRequest<P> request,
       Function<SearchHit, R> mapper) {
     SearchResponse<R, P> response = new SearchResponse<>(request);
-    response.setCount(esResponse.getHits().getTotalHits());
+    response.setCount(esResponse.getHits().getTotalHits().value);
     parseHits(esResponse, mapper).ifPresent(response::setResults);
     if (request instanceof FacetedSearchRequest) {
       parseFacets(esResponse, (FacetedSearchRequest<P>) request).ifPresent(response::setFacets);

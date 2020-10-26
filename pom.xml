@@ -58,7 +58,7 @@
     <spring-cloud-openfeign.version>2.2.1.RELEASE</spring-cloud-openfeign.version>
     <spring-cloud-zookeeper.version>2.2.0.RELEASE</spring-cloud-zookeeper.version>
     <zookeeper.version>3.4.14</zookeeper.version>
-    <elasticsearch.version>5.6.5</elasticsearch.version>
+    <elasticsearch.version>7.9.1</elasticsearch.version>
     <guava.version>17.0</guava.version>
     <logback.version>1.2.3</logback.version>
     <logstash-logback-encoder.version>4.11</logstash-logback-encoder.version>

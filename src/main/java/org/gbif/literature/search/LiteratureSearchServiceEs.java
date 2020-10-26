@@ -23,6 +23,7 @@ import org.gbif.literature.api.LiteratureSearchResult;
 import java.io.IOException;
 
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -53,7 +54,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
       return esResponseParser.buildSearchResponse(
-          restHighLevelClient.search(searchRequest), literatureSearchRequest);
+          restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT), literatureSearchRequest);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
