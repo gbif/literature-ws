@@ -15,7 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.gbif.common.shaded.com.google.common.collect.ImmutableBiMap;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureType;
 import org.gbif.literature.api.Relevance;
@@ -34,6 +33,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
