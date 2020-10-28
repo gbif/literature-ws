@@ -45,6 +45,8 @@ public final class EsQueryUtils {
   public static final String RANGE_SEPARATOR = ",";
   public static final String RANGE_WILDCARD = "*";
 
+  public static final String REGEX_PUNCT_CHARS = "(\\p{Punct})";
+
   private static final DateTimeFormatter FORMATTER =
       DateTimeFormatter.ofPattern(
           "[yyyy-MM-dd'T'HH:mm:ssXXX][yyyy-MM-dd'T'HH:mmXXX][yyyy-MM-dd'T'HH:mm:ss.SSS XXX][yyyy-MM-dd'T'HH:mm:ss.SSSXXX]"
@@ -168,5 +170,9 @@ public final class EsQueryUtils {
     return Optional.ofNullable(request.getFacetPage(facet))
         .map(v -> (int) v.getOffset())
         .orElse(request.getFacetOffset() != null ? request.getFacetOffset() : DEFAULT_FACET_OFFSET);
+  }
+
+  public static String escapeQuery(String q) {
+    return q.replaceAll(REGEX_PUNCT_CHARS, "\\\\$1");
   }
 }

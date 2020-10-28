@@ -15,6 +15,9 @@
  */
 package org.gbif.literature.search;
 
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.Operator;
+import org.elasticsearch.index.search.MatchQuery;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureType;
 import org.gbif.literature.api.Relevance;
@@ -23,10 +26,8 @@ import org.gbif.literature.api.Topic;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.common.lucene.search.function.CombineFunction;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -36,6 +37,8 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
+import static org.gbif.literature.util.EsQueryUtils.escapeQuery;
 
 @Component
 public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchParameter> {
@@ -154,17 +157,20 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
 
   @Override
   public QueryBuilder fullTextQuery(String q) {
-    return new FunctionScoreQueryBuilder(
-            QueryBuilders.multiMatchQuery(q)
-                .field("title", 20.0f)
-                .field("keywords", 15.0f)
-                .field("abstract", 10.0f)
-                .field("publisher", 8.0f)
-                .field("source", 5.0f)
-                .field("all", 1.0f)
-                .tieBreaker(0.2f)
-                .minimumShouldMatch("25%")
-                .slop(100))
-        .boostMode(CombineFunction.MULTIPLY);
+    BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+
+    boolQueryBuilder
+        .should()
+        .add(
+            QueryBuilders.matchQuery("_all", escapeQuery(q))
+                .operator(Operator.AND)
+                .boost(10.0F)
+                .fuzziness("AUTO")
+                .prefixLength(3)
+                .lenient(true)
+                .zeroTermsQuery(MatchQuery.ZeroTermsQuery.ALL)
+        );
+
+    return boolQueryBuilder;
   }
 }
