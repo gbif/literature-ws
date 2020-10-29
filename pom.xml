@@ -62,6 +62,8 @@
     <guava.version>17.0</guava.version>
     <logback.version>1.2.3</logback.version>
     <logstash-logback-encoder.version>4.11</logstash-logback-encoder.version>
+
+    <spring-boot-maven-plugin.version>${spring-boot.version}</spring-boot-maven-plugin.version>
   </properties>
 
   <dependencyManagement>
@@ -210,6 +212,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot-maven-plugin.version}</version>
         <executions>
           <execution>
             <id>repackage</id>
