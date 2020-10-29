@@ -15,9 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.Operator;
-import org.elasticsearch.index.search.MatchQuery;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureType;
 import org.gbif.literature.api.Relevance;
@@ -26,8 +23,11 @@ import org.gbif.literature.api.Topic;
 import java.util.List;
 import java.util.Map;
 
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.search.MatchQuery;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -168,8 +168,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
                 .fuzziness("AUTO")
                 .prefixLength(3)
                 .lenient(true)
-                .zeroTermsQuery(MatchQuery.ZeroTermsQuery.ALL)
-        );
+                .zeroTermsQuery(MatchQuery.ZeroTermsQuery.ALL));
 
     return boolQueryBuilder;
   }
