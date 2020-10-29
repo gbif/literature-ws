@@ -86,6 +86,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     esSearchRequest.indices(index);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.trackTotalHits(true);
     esSearchRequest.source(searchSourceBuilder);
     searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
 
