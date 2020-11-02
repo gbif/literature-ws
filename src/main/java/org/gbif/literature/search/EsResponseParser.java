@@ -37,6 +37,8 @@ import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
 
 public class EsResponseParser<T, S, P extends SearchParameter> {
 
+  public static final int MAX_RESULT_WINDOW = 20_000;
+
   private final EsFieldMapper<P> fieldParameterMapper;
   private final SearchResultConverter<T, S> searchResultConverter;
 
@@ -57,9 +59,12 @@ public class EsResponseParser<T, S, P extends SearchParameter> {
       Function<SearchHit, R> mapper) {
     SearchResponse<R, P> response = new SearchResponse<>(request);
     response.setCount(esResponse.getHits().getTotalHits().value);
-    parseHits(esResponse, mapper).ifPresent(response::setResults);
-    if (request instanceof FacetedSearchRequest) {
-      parseFacets(esResponse, (FacetedSearchRequest<P>) request).ifPresent(response::setFacets);
+
+    if (request.getLimit() + request.getOffset() < MAX_RESULT_WINDOW) {
+      parseHits(esResponse, mapper).ifPresent(response::setResults);
+      if (request instanceof FacetedSearchRequest) {
+        parseFacets(esResponse, (FacetedSearchRequest<P>) request).ifPresent(response::setFacets);
+      }
     }
 
     return response;
