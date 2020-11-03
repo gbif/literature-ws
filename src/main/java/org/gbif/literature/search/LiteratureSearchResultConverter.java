@@ -60,21 +60,14 @@ public class LiteratureSearchResultConverter
 
     getStringValue(fields, "abstract").ifPresent(result::setAbstr);
     getStringValue(fields, "accessed").ifPresent(result::setAccessed);
-    getBooleanValue(fields, "authored").ifPresent(result::setAuthored);
     getObjectsListValue(fields, "authors").ifPresent(result::setAuthors);
-    getBooleanValue(fields, "confirmed").ifPresent(result::setConfirmed);
-    getStringValue(fields, "contentType").ifPresent(result::setContentType);
     getCountrySetValue(fields, "countriesOfCoverage").ifPresent(result::setCountriesOfCoverage);
     getCountrySetValue(fields, "countriesOfResearcher").ifPresent(result::setCountriesOfResearcher);
-    getCountryValue(fields, "country").ifPresent(result::setCountry);
     getDateValue(fields, "created").ifPresent(result::setCreated);
     getDateValue(fields, "createdAt").ifPresent(result::setCreatedAt);
     getIntegerValue(fields, "day").ifPresent(result::setDay);
-    getBooleanValue(fields, "fileAttached").ifPresent(result::setFileAttached);
     getListValue(fields, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
     getRegionSetValue(fields, "gbifRegion").ifPresent(result::setGbifRegion);
-    getUuidValue(fields, "groupId").ifPresent(result::setGroupId);
-    getBooleanValue(fields, "hidden").ifPresent(result::setHidden);
     getUuidValue(fields, "id").ifPresent(result::setId);
     getMapValue(fields, "identifiers").ifPresent(result::setIdentifiers);
     getListValue(fields, "keywords").ifPresent(result::setKeywords);
@@ -84,19 +77,13 @@ public class LiteratureSearchResultConverter
     getStringValue(fields, "notes").ifPresent(result::setNotes);
     getBooleanValue(fields, "openAccess").ifPresent(result::setOpenAccess);
     getBooleanValue(fields, "peerReview").ifPresent(result::setPeerReview);
-    getBooleanValue(fields, "privatePublication").ifPresent(result::setPrivatePublication);
-    getUuidValue(fields, "profileId").ifPresent(result::setProfileId);
     getStringValue(fields, "publisher").ifPresent(result::setPublisher);
-    getBooleanValue(fields, "read").ifPresent(result::setRead);
     getRelevanceSetValue(fields, "relevance").ifPresent(result::setRelevance);
-    getBooleanValue(fields, "searchable").ifPresent(result::setSearchable);
     getStringValue(fields, "source").ifPresent(result::setSource);
-    getBooleanValue(fields, "starred").ifPresent(result::setStarred);
     getListValue(fields, "tags").ifPresent(result::setTags);
     getStringValue(fields, "title").ifPresent(result::setTitle);
     getTopicSetValue(fields, "topics").ifPresent(result::setTopics);
     getDateValue(fields, "updatedAt").ifPresent(result::setUpdatedAt);
-    getStringValue(fields, "userContext").ifPresent(result::setUserContext);
     getListValue(fields, "websites").ifPresent(result::setWebsites);
     getIntegerValue(fields, "year").ifPresent(result::setYear);
 

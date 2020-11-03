@@ -35,21 +35,14 @@ public class LiteratureSearchResult {
 
   private String abstr;
   private String accessed;
-  private boolean authored;
   private List<Map<String, Object>> authors = new ArrayList<>();
-  private boolean confirmed;
-  private String contentType;
   private Set<Country> countriesOfCoverage = new HashSet<>();
   private Set<Country> countriesOfResearcher = new HashSet<>();
-  private Country country;
   private Date created;
   private Date createdAt;
   private Integer day;
-  private boolean fileAttached;
   private List<String> gbifDownloadKey = new ArrayList<>();
   private Set<GbifRegion> gbifRegion = new HashSet<>();
-  private UUID groupId;
-  private Boolean hidden;
   private UUID id;
   private Map<String, Object> identifiers = new HashMap<>();
   private List<String> keywords = new ArrayList<>();
@@ -59,19 +52,13 @@ public class LiteratureSearchResult {
   private String notes;
   private boolean openAccess;
   private boolean peerReview;
-  private boolean privatePublication;
-  private UUID profileId;
   private String publisher;
-  private boolean read;
   private Set<Relevance> relevance = new HashSet<>();
-  private boolean searchable;
   private String source;
-  private boolean starred;
   private List<String> tags = new ArrayList<>();
   private String title;
   private Set<Topic> topics = new HashSet<>();
   private Date updatedAt;
-  private String userContext;
   private List<String> websites = new ArrayList<>();
   private Integer year;
 
@@ -92,36 +79,12 @@ public class LiteratureSearchResult {
     this.accessed = accessed;
   }
 
-  public boolean isAuthored() {
-    return authored;
-  }
-
-  public void setAuthored(boolean authored) {
-    this.authored = authored;
-  }
-
   public List<Map<String, Object>> getAuthors() {
     return authors;
   }
 
   public void setAuthors(List<Map<String, Object>> authors) {
     this.authors = authors;
-  }
-
-  public boolean isConfirmed() {
-    return confirmed;
-  }
-
-  public void setConfirmed(boolean confirmed) {
-    this.confirmed = confirmed;
-  }
-
-  public String getContentType() {
-    return contentType;
-  }
-
-  public void setContentType(String contentType) {
-    this.contentType = contentType;
   }
 
   public Set<Country> getCountriesOfCoverage() {
@@ -138,14 +101,6 @@ public class LiteratureSearchResult {
 
   public void setCountriesOfResearcher(Set<Country> countriesOfResearcher) {
     this.countriesOfResearcher = countriesOfResearcher;
-  }
-
-  public Country getCountry() {
-    return country;
-  }
-
-  public void setCountry(Country country) {
-    this.country = country;
   }
 
   public Date getCreated() {
@@ -172,14 +127,6 @@ public class LiteratureSearchResult {
     this.day = day;
   }
 
-  public boolean isFileAttached() {
-    return fileAttached;
-  }
-
-  public void setFileAttached(boolean fileAttached) {
-    this.fileAttached = fileAttached;
-  }
-
   public List<String> getGbifDownloadKey() {
     return gbifDownloadKey;
   }
@@ -194,22 +141,6 @@ public class LiteratureSearchResult {
 
   public void setGbifRegion(Set<GbifRegion> gbifRegion) {
     this.gbifRegion = gbifRegion;
-  }
-
-  public UUID getGroupId() {
-    return groupId;
-  }
-
-  public void setGroupId(UUID groupId) {
-    this.groupId = groupId;
-  }
-
-  public Boolean getHidden() {
-    return hidden;
-  }
-
-  public void setHidden(Boolean hidden) {
-    this.hidden = hidden;
   }
 
   public UUID getId() {
@@ -284,36 +215,12 @@ public class LiteratureSearchResult {
     this.peerReview = peerReview;
   }
 
-  public boolean isPrivatePublication() {
-    return privatePublication;
-  }
-
-  public void setPrivatePublication(boolean privatePublication) {
-    this.privatePublication = privatePublication;
-  }
-
-  public UUID getProfileId() {
-    return profileId;
-  }
-
-  public void setProfileId(UUID profileId) {
-    this.profileId = profileId;
-  }
-
   public String getPublisher() {
     return publisher;
   }
 
   public void setPublisher(String publisher) {
     this.publisher = publisher;
-  }
-
-  public boolean isRead() {
-    return read;
-  }
-
-  public void setRead(boolean read) {
-    this.read = read;
   }
 
   public Set<Relevance> getRelevance() {
@@ -324,28 +231,12 @@ public class LiteratureSearchResult {
     this.relevance = relevance;
   }
 
-  public boolean isSearchable() {
-    return searchable;
-  }
-
-  public void setSearchable(boolean searchable) {
-    this.searchable = searchable;
-  }
-
   public String getSource() {
     return source;
   }
 
   public void setSource(String source) {
     this.source = source;
-  }
-
-  public boolean isStarred() {
-    return starred;
-  }
-
-  public void setStarred(boolean starred) {
-    this.starred = starred;
   }
 
   public List<String> getTags() {
@@ -378,14 +269,6 @@ public class LiteratureSearchResult {
 
   public void setUpdatedAt(Date updatedAt) {
     this.updatedAt = updatedAt;
-  }
-
-  public String getUserContext() {
-    return userContext;
-  }
-
-  public void setUserContext(String userContext) {
-    this.userContext = userContext;
   }
 
   public List<String> getWebsites() {

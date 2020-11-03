@@ -122,24 +122,12 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
       "created",
       "accessed",
       "tags",
-      "read",
-      "starred",
-      "authored",
-      "confirmed",
-      "hidden",
       "language",
-      "country",
       "notes",
       "abstract",
-      "fileAttached",
-      "profileId",
-      "groupId",
       "updatedAt",
       "citationKey",
-      "userContext",
-      "privatePublication",
       "literatureType",
-      "searchable",
       "createdAt",
       "countriesOfResearcher",
       "countriesOfCoverage",
@@ -150,8 +138,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
       "topics",
       "gbifDownloadKey",
       "peerReview",
-      "openAccess",
-      "contentType"
+      "openAccess"
     };
   }
 
