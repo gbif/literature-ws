@@ -34,12 +34,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class LiteratureSearchResult {
 
   private String abstr;
-  private String accessed;
+  private String discovered;
   private List<Map<String, Object>> authors = new ArrayList<>();
   private Set<Country> countriesOfCoverage = new HashSet<>();
   private Set<Country> countriesOfResearcher = new HashSet<>();
-  private Date created;
-  private Date createdAt;
+  private Date added;
+  private Date published;
   private Integer day;
   private List<String> gbifDownloadKey = new ArrayList<>();
   private Set<GbifRegion> gbifRegion = new HashSet<>();
@@ -58,7 +58,7 @@ public class LiteratureSearchResult {
   private List<String> tags = new ArrayList<>();
   private String title;
   private Set<Topic> topics = new HashSet<>();
-  private Date updatedAt;
+  private Date modified;
   private List<String> websites = new ArrayList<>();
   private Integer year;
 
@@ -71,12 +71,12 @@ public class LiteratureSearchResult {
     this.abstr = abstr;
   }
 
-  public String getAccessed() {
-    return accessed;
+  public String getDiscovered() {
+    return discovered;
   }
 
-  public void setAccessed(String accessed) {
-    this.accessed = accessed;
+  public void setDiscovered(String discovered) {
+    this.discovered = discovered;
   }
 
   public List<Map<String, Object>> getAuthors() {
@@ -103,20 +103,20 @@ public class LiteratureSearchResult {
     this.countriesOfResearcher = countriesOfResearcher;
   }
 
-  public Date getCreated() {
-    return created;
+  public Date getAdded() {
+    return added;
   }
 
-  public void setCreated(Date created) {
-    this.created = created;
+  public void setAdded(Date added) {
+    this.added = added;
   }
 
-  public Date getCreatedAt() {
-    return createdAt;
+  public Date getPublished() {
+    return published;
   }
 
-  public void setCreatedAt(Date createdAt) {
-    this.createdAt = createdAt;
+  public void setPublished(Date published) {
+    this.published = published;
   }
 
   public Integer getDay() {
@@ -263,12 +263,12 @@ public class LiteratureSearchResult {
     this.topics = topics;
   }
 
-  public Date getUpdatedAt() {
-    return updatedAt;
+  public Date getModified() {
+    return modified;
   }
 
-  public void setUpdatedAt(Date updatedAt) {
-    this.updatedAt = updatedAt;
+  public void setModified(Date modified) {
+    this.modified = modified;
   }
 
   public List<String> getWebsites() {

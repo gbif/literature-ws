@@ -59,12 +59,12 @@ public class LiteratureSearchResultConverter
     Map<String, Object> fields = searchHit.getSourceAsMap();
 
     getStringValue(fields, "abstract").ifPresent(result::setAbstr);
-    getStringValue(fields, "accessed").ifPresent(result::setAccessed);
+    getStringValue(fields, "accessed").ifPresent(result::setDiscovered);
     getObjectsListValue(fields, "authors").ifPresent(result::setAuthors);
     getCountrySetValue(fields, "countriesOfCoverage").ifPresent(result::setCountriesOfCoverage);
     getCountrySetValue(fields, "countriesOfResearcher").ifPresent(result::setCountriesOfResearcher);
-    getDateValue(fields, "created").ifPresent(result::setCreated);
-    getDateValue(fields, "createdAt").ifPresent(result::setCreatedAt);
+    getDateValue(fields, "created").ifPresent(result::setAdded);
+    getDateValue(fields, "createdAt").ifPresent(result::setPublished);
     getIntegerValue(fields, "day").ifPresent(result::setDay);
     getListValue(fields, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
     getRegionSetValue(fields, "gbifRegion").ifPresent(result::setGbifRegion);
@@ -83,7 +83,7 @@ public class LiteratureSearchResultConverter
     getListValue(fields, "tags").ifPresent(result::setTags);
     getStringValue(fields, "title").ifPresent(result::setTitle);
     getTopicSetValue(fields, "topics").ifPresent(result::setTopics);
-    getDateValue(fields, "updatedAt").ifPresent(result::setUpdatedAt);
+    getDateValue(fields, "updatedAt").ifPresent(result::setModified);
     getListValue(fields, "websites").ifPresent(result::setWebsites);
     getIntegerValue(fields, "year").ifPresent(result::setYear);
 
