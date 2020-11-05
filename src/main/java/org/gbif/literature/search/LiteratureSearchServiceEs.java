@@ -19,13 +19,13 @@ import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureSearchRequest;
 import org.gbif.literature.api.LiteratureSearchResult;
+import org.gbif.literature.config.EsClientConfigProperties;
 
 import java.io.IOException;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -35,13 +35,15 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   private final LiteratureEsResponseParser esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
   private final String index;
+  private final int maxResultWindow;
 
   public LiteratureSearchServiceEs(
-      @Value("${elasticsearch.index}") String index,
+      EsClientConfigProperties esClientConfigProperties,
       RestHighLevelClient restHighLevelClient,
       LiteratureEsResponseParser esResponseParser,
       EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder) {
-    this.index = index;
+    this.index = esClientConfigProperties.getIndex();
+    this.maxResultWindow = esClientConfigProperties.getMaxResultWindow();
     this.restHighLevelClient = restHighLevelClient;
     this.esResponseParser = esResponseParser;
     this.esSearchRequestBuilder = esSearchRequestBuilder;
@@ -50,12 +52,28 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   @Override
   public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> search(
       LiteratureSearchRequest literatureSearchRequest) {
+    int limit = literatureSearchRequest.getLimit();
+    long offset = literatureSearchRequest.getOffset();
+    boolean offsetExceeded = false;
+
+    if (limit + offset >= maxResultWindow) {
+      literatureSearchRequest.setOffset(maxResultWindow - limit);
+      offsetExceeded = true;
+    }
+
     try {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
-      return esResponseParser.buildSearchResponse(
-          restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT),
-          literatureSearchRequest);
+      SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
+          esResponseParser.buildSearchResponse(
+              restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT),
+              literatureSearchRequest);
+
+      if (offsetExceeded) {
+        response.setOffset(offset);
+      }
+
+      return response;
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }

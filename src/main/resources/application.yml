@@ -7,3 +7,4 @@ elasticsearch:
   connectionTimeOut: 60000
   socketTimeOut: 60000
   connectionRequestTimeOut: 120000
+  maxResultWindow: 20000

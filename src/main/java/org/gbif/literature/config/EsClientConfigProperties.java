@@ -25,9 +25,11 @@ import org.springframework.stereotype.Component;
 public class EsClientConfigProperties {
 
   private Set<String> hosts;
+  private String index;
   private int connectionTimeOut;
   private int socketTimeOut;
   private int connectionRequestTimeOut;
+  private int maxResultWindow;
 
   public Set<String> getHosts() {
     return hosts;
@@ -35,6 +37,14 @@ public class EsClientConfigProperties {
 
   public void setHosts(Set<String> hosts) {
     this.hosts = hosts;
+  }
+
+  public String getIndex() {
+    return index;
+  }
+
+  public void setIndex(String index) {
+    this.index = index;
   }
 
   public int getConnectionTimeOut() {
@@ -59,5 +69,13 @@ public class EsClientConfigProperties {
 
   public void setConnectionRequestTimeOut(int connectionRequestTimeOut) {
     this.connectionRequestTimeOut = connectionRequestTimeOut;
+  }
+
+  public int getMaxResultWindow() {
+    return maxResultWindow;
+  }
+
+  public void setMaxResultWindow(int maxResultWindow) {
+    this.maxResultWindow = maxResultWindow;
   }
 }
