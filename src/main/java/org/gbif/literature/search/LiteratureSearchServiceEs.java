@@ -85,7 +85,8 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   public Optional<LiteratureSearchResult> get(UUID id) {
     SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetByIdRequest(id, index);
     try {
-      return esResponseParser.buildGetByIdResponse(restHighLevelClient.search(getByIdRequest, RequestOptions.DEFAULT));
+      return esResponseParser.buildGetByIdResponse(
+          restHighLevelClient.search(getByIdRequest, RequestOptions.DEFAULT));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
