@@ -22,9 +22,13 @@ import org.gbif.literature.api.LiteratureSearchResult;
 import org.gbif.literature.search.LiteratureSearchService;
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RequestMapping(value = "literature", produces = MediaType.APPLICATION_JSON_VALUE)
 @RestController
@@ -40,5 +44,12 @@ public class LiteratureResource {
   public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> search(
       LiteratureSearchRequest searchRequest) {
     return searchService.search(searchRequest);
+  }
+
+  @GetMapping("{id}")
+  public ResponseEntity<LiteratureSearchResult> get(@PathVariable("id") UUID id) {
+    return searchService.get(id)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
   }
 }

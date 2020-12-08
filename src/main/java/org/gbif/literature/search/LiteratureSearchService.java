@@ -20,6 +20,12 @@ import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureSearchRequest;
 import org.gbif.literature.api.LiteratureSearchResult;
 
+import java.util.Optional;
+import java.util.UUID;
+
 public interface LiteratureSearchService
     extends SearchService<
-        LiteratureSearchResult, LiteratureSearchParameter, LiteratureSearchRequest> {}
+        LiteratureSearchResult, LiteratureSearchParameter, LiteratureSearchRequest> {
+
+  Optional<LiteratureSearchResult> get(UUID id);
+}

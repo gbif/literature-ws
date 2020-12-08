@@ -46,6 +46,16 @@ public class EsResponseParser<T, S, P extends SearchParameter> {
     this.fieldParameterMapper = fieldParameterMapper;
   }
 
+  public Optional<T> buildGetByIdResponse(org.elasticsearch.action.search.SearchResponse esResponse) {
+    if (esResponse.getHits() == null
+        || esResponse.getHits().getHits() == null
+        || esResponse.getHits().getHits().length == 0) {
+      return Optional.empty();
+    }
+
+    return Optional.of(searchResultConverter.toSearchResult(esResponse.getHits().getAt(0)));
+  }
+
   public SearchResponse<T, P> buildSearchResponse(
       org.elasticsearch.action.search.SearchResponse esResponse, SearchRequest<P> request) {
     return buildSearchResponse(esResponse, request, searchResultConverter::toSearchResult);

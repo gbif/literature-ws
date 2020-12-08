@@ -22,6 +22,8 @@ import org.gbif.literature.api.LiteratureSearchResult;
 import org.gbif.literature.config.EsClientConfigProperties;
 
 import java.io.IOException;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -76,6 +78,16 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
       return response;
     } catch (IOException ex) {
       throw new RuntimeException(ex);
+    }
+  }
+
+  @Override
+  public Optional<LiteratureSearchResult> get(UUID id) {
+    SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetByIdRequest(id, index);
+    try {
+      return esResponseParser.buildGetByIdResponse(restHighLevelClient.search(getByIdRequest, RequestOptions.DEFAULT));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }

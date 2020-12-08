@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -124,6 +125,17 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     // post-filter
     buildPostFilter(groupedParams.postFilterParams).ifPresent(searchSourceBuilder::postFilter);
+
+    return esSearchRequest;
+  }
+
+  public SearchRequest buildGetByIdRequest(UUID id, String index) {
+    SearchRequest esSearchRequest = new SearchRequest();
+    esSearchRequest.indices(index);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    esSearchRequest.source(searchSourceBuilder);
+    searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
+    searchSourceBuilder.query(QueryBuilders.matchQuery("id", id.toString()));
 
     return esSearchRequest;
   }
