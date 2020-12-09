@@ -15,6 +15,7 @@
  */
 package org.gbif.literature.resource;
 
+import org.gbif.api.model.common.DOI;
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureSearchRequest;
@@ -49,5 +50,15 @@ public class LiteratureResource {
   @GetMapping("{id}")
   public ResponseEntity<LiteratureSearchResult> get(@PathVariable("id") UUID id) {
     return searchService.get(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+  }
+
+  @GetMapping("{doiPrefix}/{doiSuffix}")
+  public ResponseEntity<LiteratureSearchResult> get(
+      @PathVariable("doiPrefix") String doiPrefix,
+      @PathVariable("doiSuffix") String doiSuffix) {
+    return searchService
+        .get(new DOI(doiPrefix, doiSuffix))
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
   }
 }

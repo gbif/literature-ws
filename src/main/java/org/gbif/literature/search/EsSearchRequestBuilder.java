@@ -15,6 +15,7 @@
  */
 package org.gbif.literature.search;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -129,13 +130,23 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     return esSearchRequest;
   }
 
-  public SearchRequest buildGetByIdRequest(UUID id, String index) {
+  public SearchRequest buildGetRequest(Object idOrDoi, String index) {
     SearchRequest esSearchRequest = new SearchRequest();
     esSearchRequest.indices(index);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     esSearchRequest.source(searchSourceBuilder);
     searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
-    searchSourceBuilder.query(QueryBuilders.matchQuery("id", id.toString()));
+
+    if (idOrDoi instanceof UUID) {
+      searchSourceBuilder.query(QueryBuilders.matchQuery("id", idOrDoi.toString()));
+    } else {
+      QueryBuilder query = QueryBuilders.nestedQuery(
+          "identifiers",
+          QueryBuilders.matchQuery("identifiers.doi", idOrDoi.toString()),
+          ScoreMode.Total);
+
+      searchSourceBuilder.query(query);
+    }
 
     return esSearchRequest;
   }
