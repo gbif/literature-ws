@@ -2,13 +2,15 @@
 
 RESTful literature search service.
 
-http://api.gbif-dev.org/v1/literature/search
 
 ## GBIF portal
 
 https://www.gbif.org/resource/search?contentType=literature
 
-## Parameters
+## Search and parameters
+
+http://api.gbif-dev.org/v1/literature/search
+
 
 | Parameter                 | Value                                                                                                      | Description                                                                             |
 |---------------------------|------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
@@ -26,3 +28,10 @@ https://www.gbif.org/resource/search?contentType=literature
 | gbifDownloadKey           | String                                                                                                     | Download referenced in publication                                                      |
 | source                    | String                                                                                                     | Journal of publication                                                                  |
 | publisher                 | String                                                                                                     | Publisher of journal                                                                    |
+
+
+## Get by id or DOI
+
+http://api.gbif-dev.org/v1/literature/{id}
+
+http://api.gbif-dev.org/v1/literature/{doi}
