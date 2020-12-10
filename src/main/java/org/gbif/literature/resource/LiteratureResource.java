@@ -57,8 +57,7 @@ public class LiteratureResource {
 
   @GetMapping("**")
   public ResponseEntity<LiteratureSearchResult> get(HttpServletRequest request) {
-    String doi = request.getRequestURI()
-        .split(request.getContextPath() + "/literature/")[1];
+    String doi = request.getRequestURI().split(request.getContextPath() + "/literature/")[1];
     Optional<LiteratureSearchResult> result;
 
     if (DOI.isParsable(doi)) {
@@ -67,8 +66,6 @@ public class LiteratureResource {
       return ResponseEntity.badRequest().build();
     }
 
-    return result
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+    return result.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
 }
