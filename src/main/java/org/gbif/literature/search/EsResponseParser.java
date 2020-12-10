@@ -46,8 +46,7 @@ public class EsResponseParser<T, S, P extends SearchParameter> {
     this.fieldParameterMapper = fieldParameterMapper;
   }
 
-  public Optional<T> buildGetResponse(
-      org.elasticsearch.action.search.SearchResponse esResponse) {
+  public Optional<T> buildGetResponse(org.elasticsearch.action.search.SearchResponse esResponse) {
     if (esResponse.getHits() == null
         || esResponse.getHits().getHits() == null
         || esResponse.getHits().getHits().length == 0) {

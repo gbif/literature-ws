@@ -54,8 +54,7 @@ public class LiteratureResource {
 
   @GetMapping("{doiPrefix}/{doiSuffix}")
   public ResponseEntity<LiteratureSearchResult> get(
-      @PathVariable("doiPrefix") String doiPrefix,
-      @PathVariable("doiSuffix") String doiSuffix) {
+      @PathVariable("doiPrefix") String doiPrefix, @PathVariable("doiSuffix") String doiSuffix) {
     return searchService
         .get(new DOI(doiPrefix, doiSuffix))
         .map(ResponseEntity::ok)

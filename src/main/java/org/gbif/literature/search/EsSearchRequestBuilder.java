@@ -15,7 +15,6 @@
  */
 package org.gbif.literature.search;
 
-import org.apache.lucene.search.join.ScoreMode;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -36,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -140,10 +140,11 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     if (idOrDoi instanceof UUID) {
       searchSourceBuilder.query(QueryBuilders.matchQuery("id", idOrDoi.toString()));
     } else {
-      QueryBuilder query = QueryBuilders.nestedQuery(
-          "identifiers",
-          QueryBuilders.matchQuery("identifiers.doi", idOrDoi.toString()),
-          ScoreMode.Total);
+      QueryBuilder query =
+          QueryBuilders.nestedQuery(
+              "identifiers",
+              QueryBuilders.matchQuery("identifiers.doi", idOrDoi.toString()),
+              ScoreMode.Total);
 
       searchSourceBuilder.query(query);
     }
