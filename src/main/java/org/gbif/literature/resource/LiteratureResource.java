@@ -22,7 +22,10 @@ import org.gbif.literature.api.LiteratureSearchRequest;
 import org.gbif.literature.api.LiteratureSearchResult;
 import org.gbif.literature.search.LiteratureSearchService;
 
+import java.util.Optional;
 import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,11 +55,19 @@ public class LiteratureResource {
     return searchService.get(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
 
-  @GetMapping("{doiPrefix}/{doiSuffix}")
-  public ResponseEntity<LiteratureSearchResult> get(
-      @PathVariable("doiPrefix") String doiPrefix, @PathVariable("doiSuffix") String doiSuffix) {
-    return searchService
-        .get(new DOI(doiPrefix, doiSuffix))
+  @GetMapping("**")
+  public ResponseEntity<LiteratureSearchResult> get(HttpServletRequest request) {
+    String doi = request.getRequestURI()
+        .split(request.getContextPath() + "/literature/")[1];
+    Optional<LiteratureSearchResult> result;
+
+    if (DOI.isParsable(doi)) {
+      result = searchService.get(doi);
+    } else {
+      return ResponseEntity.badRequest().build();
+    }
+
+    return result
         .map(ResponseEntity::ok)
         .orElse(ResponseEntity.notFound().build());
   }
