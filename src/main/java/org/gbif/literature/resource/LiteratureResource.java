@@ -59,7 +59,8 @@ public class LiteratureResource {
 
   @GetMapping("**")
   public ResponseEntity<LiteratureSearchResult> get(HttpServletRequest request) {
-    String doi = decodeUrl(request.getRequestURI()).split(request.getContextPath() + "/literature/")[1];
+    String doi =
+        decodeUrl(request.getRequestURI()).split(request.getContextPath() + "/literature/")[1];
     Optional<LiteratureSearchResult> result;
 
     if (DOI.isParsable(doi)) {

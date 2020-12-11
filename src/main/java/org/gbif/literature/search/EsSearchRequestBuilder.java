@@ -51,6 +51,10 @@ import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.gbif.api.util.SearchTypeValidator.isRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
@@ -58,10 +62,6 @@ import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
 import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class EsSearchRequestBuilder<P extends SearchParameter> {
 
