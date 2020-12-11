@@ -34,6 +34,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.gbif.literature.util.LiteratureUtils.decodeUrl;
+
 @RequestMapping(value = "literature", produces = MediaType.APPLICATION_JSON_VALUE)
 @RestController
 public class LiteratureResource {
@@ -57,7 +59,7 @@ public class LiteratureResource {
 
   @GetMapping("**")
   public ResponseEntity<LiteratureSearchResult> get(HttpServletRequest request) {
-    String doi = request.getRequestURI().split(request.getContextPath() + "/literature/")[1];
+    String doi = decodeUrl(request.getRequestURI()).split(request.getContextPath() + "/literature/")[1];
     Optional<LiteratureSearchResult> result;
 
     if (DOI.isParsable(doi)) {

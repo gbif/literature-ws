@@ -58,6 +58,10 @@ import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
 import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class EsSearchRequestBuilder<P extends SearchParameter> {
 
@@ -138,15 +142,15 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
 
     if (idOrDoi instanceof UUID) {
-      searchSourceBuilder.query(QueryBuilders.matchQuery("id", idOrDoi.toString()));
+      searchSourceBuilder.query(matchQuery("id", idOrDoi.toString()));
     } else {
-      QueryBuilder query =
-          QueryBuilders.nestedQuery(
-              "identifiers",
-              QueryBuilders.matchQuery("identifiers.doi", idOrDoi.toString()),
-              ScoreMode.Total);
-
-      searchSourceBuilder.query(query);
+      searchSourceBuilder.query(
+          boolQuery()
+              .must(
+                  nestedQuery(
+                      "identifiers",
+                      termQuery("identifiers.doi", idOrDoi.toString()),
+                      ScoreMode.None)));
     }
 
     return esSearchRequest;
@@ -157,7 +161,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
       return Optional.empty();
     }
 
-    BoolQueryBuilder bool = QueryBuilders.boolQuery();
+    BoolQueryBuilder bool = boolQuery();
     bool.filter()
         .addAll(
             postFilterParams.entrySet().stream()
@@ -202,7 +206,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
         .map(
             facetParam -> {
               // build filter aggs
-              BoolQueryBuilder bool = QueryBuilders.boolQuery();
+              BoolQueryBuilder bool = boolQuery();
               bool.filter()
                   .addAll(
                       postFilterParams.entrySet().stream()
@@ -287,7 +291,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
   private Optional<QueryBuilder> buildQuery(Map<P, Set<String>> params, String qParam) {
     // create bool node
-    BoolQueryBuilder bool = QueryBuilders.boolQuery();
+    BoolQueryBuilder bool = boolQuery();
 
     // adding full text search parameter
     if (StringUtils.isNotBlank(qParam)) {
@@ -326,7 +330,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     if (parsedValues.size() == 1) {
       // single term
-      queries.add(QueryBuilders.termQuery(esField, parsedValues.get(0)));
+      queries.add(termQuery(esField, parsedValues.get(0)));
     } else if (parsedValues.size() > 1) {
       // multi term query
       queries.add(QueryBuilders.termsQuery(esField, parsedValues));

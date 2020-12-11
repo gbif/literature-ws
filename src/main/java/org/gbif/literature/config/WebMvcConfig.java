@@ -22,6 +22,8 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -33,6 +35,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
   @Override
   public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
     argumentResolvers.add(new LiteratureSearchRequestHandlerMethodArgumentResolver());
+  }
+
+  @Bean
+  public HttpFirewall allowUrlEncodedPercentHttpFirewall() {
+    StrictHttpFirewall firewall = new StrictHttpFirewall();
+    firewall.setAllowSemicolon(true);
+    return firewall;
   }
 
   @Primary
