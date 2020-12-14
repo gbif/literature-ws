@@ -31,16 +31,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -59,11 +56,13 @@ import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public class EsSearchRequestBuilder<P extends SearchParameter> {
+public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
 
   private static final int MAX_SIZE_TERMS_AGGS = 1200000;
   private static final String PRE_HL_TAG = "<em class=\"gbifHl\">";
@@ -118,7 +117,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     // add query
     if (SearchConstants.QUERY_WILDCARD.equals(searchRequest.getQ())) {
       // search all
-      searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+      searchSourceBuilder.query(matchAllQuery());
     } else {
       buildQuery(groupedParams.queryParams, searchRequest.getQ())
           .ifPresent(searchSourceBuilder::query);
@@ -134,24 +133,13 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     return esSearchRequest;
   }
 
-  public SearchRequest buildGetRequest(Object idOrDoi, String index) {
+  public SearchRequest buildGetRequest(Object identifier, String index) {
     SearchRequest esSearchRequest = new SearchRequest();
     esSearchRequest.indices(index);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     esSearchRequest.source(searchSourceBuilder);
     searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
-
-    if (idOrDoi instanceof UUID) {
-      searchSourceBuilder.query(matchQuery("id", idOrDoi.toString()));
-    } else {
-      searchSourceBuilder.query(
-          boolQuery()
-              .must(
-                  nestedQuery(
-                      "identifiers",
-                      termQuery("identifiers.doi", idOrDoi.toString()),
-                      ScoreMode.None)));
-    }
+    searchSourceBuilder.query(matchQuery("id", identifier.toString()));
 
     return esSearchRequest;
   }
@@ -298,6 +286,9 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
       bool.must(esFieldMapper.fullTextQuery(qParam));
     }
 
+    // adding specific stuff (e.g. DOI search)
+    buildSpecificQuery(bool, params);
+
     if (params != null && !params.isEmpty()) {
       // adding term queries to bool
       bool.filter()
@@ -313,6 +304,8 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     return bool.must().isEmpty() && bool.filter().isEmpty() ? Optional.empty() : Optional.of(bool);
   }
+
+  protected abstract void buildSpecificQuery(BoolQueryBuilder queryBuilder, Map<P, Set<String>> params);
 
   private List<QueryBuilder> buildTermQuery(Collection<String> values, P param, String esField) {
     List<QueryBuilder> queries = new ArrayList<>();
@@ -333,14 +326,14 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
       queries.add(termQuery(esField, parsedValues.get(0)));
     } else if (parsedValues.size() > 1) {
       // multi term query
-      queries.add(QueryBuilders.termsQuery(esField, parsedValues));
+      queries.add(termsQuery(esField, parsedValues));
     }
 
     return queries;
   }
 
   private RangeQueryBuilder buildRangeQuery(String esField, String value) {
-    RangeQueryBuilder builder = QueryBuilders.rangeQuery(esField);
+    RangeQueryBuilder builder = rangeQuery(esField);
 
     if (esFieldMapper.isDateField(esField)) {
       String[] values = value.split(RANGE_SEPARATOR);

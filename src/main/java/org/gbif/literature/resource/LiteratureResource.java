@@ -15,17 +15,13 @@
  */
 package org.gbif.literature.resource;
 
-import org.gbif.api.model.common.DOI;
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.literature.api.LiteratureSearchParameter;
 import org.gbif.literature.api.LiteratureSearchRequest;
 import org.gbif.literature.api.LiteratureSearchResult;
 import org.gbif.literature.search.LiteratureSearchService;
 
-import java.util.Optional;
 import java.util.UUID;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +29,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import static org.gbif.literature.util.LiteratureUtils.decodeUrl;
 
 @RequestMapping(value = "literature", produces = MediaType.APPLICATION_JSON_VALUE)
 @RestController
@@ -55,19 +49,5 @@ public class LiteratureResource {
   @GetMapping("{id}")
   public ResponseEntity<LiteratureSearchResult> get(@PathVariable("id") UUID id) {
     return searchService.get(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-  }
-
-  @GetMapping("**")
-  public ResponseEntity<LiteratureSearchResult> get(HttpServletRequest request) {
-    String doi = decodeUrl(request.getRequestURI()).split(request.getContextPath() + "/literature/")[1];
-    Optional<LiteratureSearchResult> result;
-
-    if (DOI.isParsable(doi)) {
-      result = searchService.get(doi);
-    } else {
-      return ResponseEntity.badRequest().build();
-    }
-
-    return result.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
   }
 }

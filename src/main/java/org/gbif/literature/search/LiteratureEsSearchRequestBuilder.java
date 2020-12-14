@@ -17,7 +17,15 @@ package org.gbif.literature.search;
 
 import org.gbif.literature.api.LiteratureSearchParameter;
 
+import org.apache.lucene.search.join.ScoreMode;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.Set;
+
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 public class LiteratureEsSearchRequestBuilder
@@ -25,5 +33,16 @@ public class LiteratureEsSearchRequestBuilder
 
   public LiteratureEsSearchRequestBuilder(EsFieldMapper<LiteratureSearchParameter> esFieldMapper) {
     super(esFieldMapper);
+  }
+
+  @Override
+  protected void buildSpecificQuery(BoolQueryBuilder queryBuilder, Map<LiteratureSearchParameter, Set<String>> params) {
+    if (params != null && !params.isEmpty()) {
+      queryBuilder.must(
+          nestedQuery(
+              "identifiers",
+              termsQuery("identifiers.doi", params.get(LiteratureSearchParameter.DOI)),
+              ScoreMode.None));
+    }
   }
 }

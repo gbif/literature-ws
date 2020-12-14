@@ -18,7 +18,10 @@ package org.gbif.literature.api;
 import org.gbif.api.model.common.paging.Pageable;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 
+@SuppressWarnings("unused")
 public class LiteratureSearchRequest extends FacetedSearchRequest<LiteratureSearchParameter> {
+
+  private String doi;
 
   public LiteratureSearchRequest() {}
 
@@ -28,5 +31,13 @@ public class LiteratureSearchRequest extends FacetedSearchRequest<LiteratureSear
 
   public LiteratureSearchRequest(long offset, int limit) {
     super(offset, limit);
+  }
+
+  public String getDoi() {
+    return doi;
+  }
+
+  public void setDoi(String doi) {
+    this.doi = doi;
   }
 }
