@@ -26,12 +26,11 @@ http://api.gbif-dev.org/v1/literature/search
 | peerReview                | Boolean                                                                                                    | Has publication undergone peer-review?                                                  |
 | openAccess                | Boolean                                                                                                    | Is publication Open Access?                                                             |
 | gbifDownloadKey           | String                                                                                                     | Download referenced in publication                                                      |
+| doi                       | String                                                                                                     | Digital Object Identifier (DOI)                                                         |
 | source                    | String                                                                                                     | Journal of publication                                                                  |
 | publisher                 | String                                                                                                     | Publisher of journal                                                                    |
 
 
-## Get by id or DOI
+## Find by id
 
 http://api.gbif-dev.org/v1/literature/{id}
-
-http://api.gbif-dev.org/v1/literature/{doi}
