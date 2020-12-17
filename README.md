@@ -9,7 +9,7 @@ https://www.gbif.org/resource/search?contentType=literature
 
 ## Search and parameters
 
-http://api.gbif-dev.org/v1/literature/search
+http://api.gbif.org/v1/literature/search
 
 
 | Parameter                 | Value                                                                                                      | Description                                                                             |
@@ -33,4 +33,4 @@ http://api.gbif-dev.org/v1/literature/search
 
 ## Find by id
 
-http://api.gbif-dev.org/v1/literature/{id}
+http://api.gbif.org/v1/literature/{id}
