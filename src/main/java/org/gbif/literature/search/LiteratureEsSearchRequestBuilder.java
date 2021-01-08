@@ -39,11 +39,14 @@ public class LiteratureEsSearchRequestBuilder
   protected void buildSpecificQuery(
       BoolQueryBuilder queryBuilder, Map<LiteratureSearchParameter, Set<String>> params) {
     if (params != null && !params.isEmpty()) {
-      queryBuilder.must(
-          nestedQuery(
-              "identifiers",
-              termsQuery("identifiers.doi", params.get(LiteratureSearchParameter.DOI)),
-              ScoreMode.None));
+      Set<String> values = params.get(LiteratureSearchParameter.DOI);
+      if (values != null && !values.isEmpty()) {
+        queryBuilder.must(
+            nestedQuery(
+                "identifiers",
+                termsQuery("identifiers.doi", values),
+                ScoreMode.None));
+      }
     }
   }
 }
