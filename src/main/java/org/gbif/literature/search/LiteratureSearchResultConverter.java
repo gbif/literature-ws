@@ -18,11 +18,11 @@ package org.gbif.literature.search;
 import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
+import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.GbifRegion;
 import org.gbif.api.vocabulary.Language;
-import org.gbif.api.model.literature.search.LiteratureSearchResult;
 
 import java.util.Date;
 import java.util.List;
@@ -164,7 +164,8 @@ public class LiteratureSearchResultConverter
                     .collect(Collectors.toSet()));
   }
 
-  private static Optional<Set<LiteratureTopic>> getTopicSetValue(Map<String, Object> fields, String esField) {
+  private static Optional<Set<LiteratureTopic>> getTopicSetValue(
+      Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
         .map(v -> (List<String>) v)
         .filter(v -> !v.isEmpty())

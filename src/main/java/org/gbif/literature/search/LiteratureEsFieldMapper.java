@@ -15,10 +15,10 @@
  */
 package org.gbif.literature.search;
 
-import org.gbif.api.model.literature.search.LiteratureSearchParameter;
+import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
-import org.gbif.api.model.literature.LiteratureRelevance;
+import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 
 import java.util.List;
 import java.util.Map;

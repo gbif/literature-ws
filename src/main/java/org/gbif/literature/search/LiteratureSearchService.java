@@ -16,8 +16,8 @@
 package org.gbif.literature.search;
 
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
-import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
+import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.service.common.SearchService;
 
 import java.util.Optional;
