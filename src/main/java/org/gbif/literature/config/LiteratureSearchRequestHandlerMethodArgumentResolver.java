@@ -15,8 +15,8 @@
  */
 package org.gbif.literature.config;
 
-import org.gbif.literature.api.LiteratureSearchParameter;
-import org.gbif.literature.api.LiteratureSearchRequest;
+import org.gbif.api.model.literature.search.LiteratureSearchParameter;
+import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.ws.server.provider.FacetedSearchRequestProvider;
 
 import org.springframework.core.MethodParameter;

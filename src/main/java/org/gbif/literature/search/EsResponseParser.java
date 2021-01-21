@@ -35,13 +35,13 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
 
-public class EsResponseParser<T, S, P extends SearchParameter> {
+public class EsResponseParser<T, P extends SearchParameter> {
 
   private final EsFieldMapper<P> fieldParameterMapper;
-  private final SearchResultConverter<T, S> searchResultConverter;
+  private final SearchResultConverter<T> searchResultConverter;
 
   public EsResponseParser(
-      SearchResultConverter<T, S> searchResultConverter, EsFieldMapper<P> fieldParameterMapper) {
+      SearchResultConverter<T> searchResultConverter, EsFieldMapper<P> fieldParameterMapper) {
     this.searchResultConverter = searchResultConverter;
     this.fieldParameterMapper = fieldParameterMapper;
   }

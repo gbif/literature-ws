@@ -15,10 +15,10 @@
  */
 package org.gbif.literature.search;
 
-import org.gbif.literature.api.LiteratureSearchParameter;
-import org.gbif.literature.api.LiteratureType;
-import org.gbif.literature.api.Relevance;
-import org.gbif.literature.api.Topic;
+import org.gbif.api.model.literature.search.LiteratureSearchParameter;
+import org.gbif.api.model.literature.LiteratureTopic;
+import org.gbif.api.model.literature.LiteratureType;
+import org.gbif.api.model.literature.LiteratureRelevance;
 
 import java.util.List;
 import java.util.Map;
@@ -63,8 +63,8 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   public static final Map<String, Integer> CARDINALITIES =
       ImmutableMap.<String, Integer>builder()
           .put("literatureType", LiteratureType.values().length)
-          .put("relevance", Relevance.values().length)
-          .put("topics", Topic.values().length)
+          .put("relevance", LiteratureRelevance.values().length)
+          .put("topics", LiteratureTopic.values().length)
           .build();
 
   private static final FieldSortBuilder[] SORT =

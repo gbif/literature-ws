@@ -17,9 +17,7 @@ package org.gbif.literature.search;
 
 import org.elasticsearch.search.SearchHit;
 
-public interface SearchResultConverter<T, S> {
+public interface SearchResultConverter<T> {
 
   T toSearchResult(SearchHit searchHit);
-
-  S toSearchSuggestResult(SearchHit searchHit);
 }

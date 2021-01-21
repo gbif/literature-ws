@@ -15,7 +15,7 @@
  */
 package org.gbif.literature.search;
 
-import org.gbif.literature.api.LiteratureSearchParameter;
+import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 
 import java.util.Map;
 import java.util.Set;

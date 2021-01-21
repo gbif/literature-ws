@@ -18,9 +18,9 @@ package org.gbif.literature.search;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
+import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
-import org.gbif.literature.api.LiteratureType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

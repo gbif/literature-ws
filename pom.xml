@@ -51,7 +51,7 @@
     <main.basedir>${project.basedir}</main.basedir>
     <start-class>org.gbif.literature.LiteratureApplication</start-class>
 
-    <gbif-api.version>0.122</gbif-api.version>
+    <gbif-api.version>0.137-SNAPSHOT</gbif-api.version>
     <gbif-common-ws.version>1.12</gbif-common-ws.version>
 
     <spring-cloud-openfeign.version>2.2.6.RELEASE</spring-cloud-openfeign.version>

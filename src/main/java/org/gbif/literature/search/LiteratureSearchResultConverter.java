@@ -15,15 +15,14 @@
  */
 package org.gbif.literature.search;
 
+import org.gbif.api.model.literature.LiteratureRelevance;
+import org.gbif.api.model.literature.LiteratureTopic;
+import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.GbifRegion;
 import org.gbif.api.vocabulary.Language;
-import org.gbif.literature.api.LiteratureSearchResult;
-import org.gbif.literature.api.LiteratureSuggestResult;
-import org.gbif.literature.api.LiteratureType;
-import org.gbif.literature.api.Relevance;
-import org.gbif.literature.api.Topic;
+import org.gbif.api.model.literature.search.LiteratureSearchResult;
 
 import java.util.Date;
 import java.util.List;
@@ -46,7 +45,7 @@ import static org.gbif.literature.util.EsQueryUtils.STRING_TO_DATE;
 @SuppressWarnings("unchecked")
 @Component
 public class LiteratureSearchResultConverter
-    implements SearchResultConverter<LiteratureSearchResult, LiteratureSuggestResult> {
+    implements SearchResultConverter<LiteratureSearchResult> {
 
   private static final Logger LOG = LoggerFactory.getLogger(LiteratureSearchResultConverter.class);
 
@@ -88,11 +87,6 @@ public class LiteratureSearchResultConverter
     getIntegerValue(fields, "year").ifPresent(result::setYear);
 
     return result;
-  }
-
-  @Override
-  public LiteratureSuggestResult toSearchSuggestResult(SearchHit searchHit) {
-    return null;
   }
 
   private static Optional<String> getStringValue(Map<String, Object> fields, String esField) {
@@ -158,7 +152,7 @@ public class LiteratureSearchResultConverter
         fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureType.class));
   }
 
-  private static Optional<Set<Relevance>> getRelevanceSetValue(
+  private static Optional<Set<LiteratureRelevance>> getRelevanceSetValue(
       Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
         .map(v -> (List<String>) v)
@@ -166,18 +160,18 @@ public class LiteratureSearchResultConverter
         .map(
             v ->
                 v.stream()
-                    .map(value -> VocabularyUtils.lookupEnum(value, Relevance.class))
+                    .map(value -> VocabularyUtils.lookupEnum(value, LiteratureRelevance.class))
                     .collect(Collectors.toSet()));
   }
 
-  private static Optional<Set<Topic>> getTopicSetValue(Map<String, Object> fields, String esField) {
+  private static Optional<Set<LiteratureTopic>> getTopicSetValue(Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
         .map(v -> (List<String>) v)
         .filter(v -> !v.isEmpty())
         .map(
             v ->
                 v.stream()
-                    .map(value -> VocabularyUtils.lookupEnum(value, Topic.class))
+                    .map(value -> VocabularyUtils.lookupEnum(value, LiteratureTopic.class))
                     .collect(Collectors.toSet()));
   }
 
