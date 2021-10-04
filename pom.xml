@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.gbif</groupId>
     <artifactId>motherpom</artifactId>
-    <version>49</version>
+    <version>55</version>
   </parent>
 
   <groupId>org.gbif.literature</groupId>
@@ -23,32 +23,23 @@
   <distributionManagement>
     <site>
       <id>gh-pages</id>
-      <url>http://gbif.github.io/${project.artifactId}/</url>
+      <url>https://gbif.github.io/${project.artifactId}/</url>
     </site>
   </distributionManagement>
 
   <repositories>
     <repository>
       <id>gbif-all</id>
-      <url>http://repository.gbif.org/content/groups/gbif</url>
+      <url>https://repository.gbif.org/content/groups/gbif/</url>
     </repository>
     <repository>
       <id>gbif-thirdparty</id>
-      <url>http://repository.gbif.org/content/repositories/thirdparty/</url>
-    </repository>
-    <repository>
-      <id>cloudera-release</id>
-      <url>http://repository.cloudera.com/artifactory/cloudera-repos/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
+      <url>https://repository.gbif.org/content/repositories/thirdparty/</url>
     </repository>
   </repositories>
 
   <properties>
-    <java.version>1.8</java.version>
     <spring-boot.version>2.3.7.RELEASE</spring-boot.version>
-    <main.basedir>${project.basedir}</main.basedir>
     <start-class>org.gbif.literature.LiteratureApplication</start-class>
 
     <gbif-api.version>0.137</gbif-api.version>
@@ -253,6 +244,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless-maven-plugin.version}</version>
       </plugin>
     </plugins>
   </build>
