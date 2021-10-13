@@ -121,19 +121,18 @@ public class LiteratureSearchResultConverter
         .filter(v -> !v.isEmpty());
   }
 
-  private static <T> Optional<List<T>> getMappedListValue(Map<String, Object> fields, String esField, Function<String,T> mapper) {
+  private static <T> Optional<List<T>> getMappedListValue(Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
-      .map(v -> (List<String>) v)
-      .filter(v -> !v.isEmpty())
-      .map(v -> v.stream().map(mapper).collect(Collectors.toList()));
+      .map(v -> (List<T>) v)
+      .filter(v -> !v.isEmpty());
   }
 
   private static Optional<List<Integer>> getListIntValue(Map<String, Object> fields, String esField) {
-    return getMappedListValue(fields, esField, Integer::parseInt);
+    return getMappedListValue(fields, esField);
   }
 
   private static Optional<List<Long>> getListLongValue(Map<String, Object> fields, String esField) {
-    return getMappedListValue(fields, esField, Long::parseLong);
+    return getMappedListValue(fields, esField);
   }
 
   private static Optional<Map<String, Object>> getMapValue(
