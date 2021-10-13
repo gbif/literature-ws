@@ -64,6 +64,10 @@ public class LiteratureSearchResultConverter
     getDateValue(fields, "createdAt").ifPresent(result::setPublished);
     getIntegerValue(fields, "day").ifPresent(result::setDay);
     getListValue(fields, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
+    getListLongValue(fields, "gbifOccurrenceKey").ifPresent(result::setGbifOccurrenceKey);
+    getListIntValue(fields, "gbifTaxonKey").ifPresent(result::setGbifTaxonKey);
+    getListIntValue(fields, "gbifHigherTaxonKey").ifPresent(result::setGbifHigherTaxonKey);
+    getStringValue(fields, "citationType").ifPresent(result::setCitationType);
     getRegionSetValue(fields, "gbifRegion").ifPresent(result::setGbifRegion);
     getUuidValue(fields, "id").ifPresent(result::setId);
     getMapValue(fields, "identifiers").ifPresent(result::setIdentifiers);
@@ -107,10 +111,6 @@ public class LiteratureSearchResultConverter
     return getValue(fields, esField, UUID::fromString);
   }
 
-  private static Optional<Country> getCountryValue(Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, Country::fromIsoCode);
-  }
-
   private static Optional<Language> getLanguageValue(Map<String, Object> fields, String esField) {
     return getValue(fields, esField, Language::fromIsoCode);
   }
@@ -121,6 +121,21 @@ public class LiteratureSearchResultConverter
         .filter(v -> !v.isEmpty());
   }
 
+  private static <T> Optional<List<T>> getMappedListValue(Map<String, Object> fields, String esField, Function<String,T> mapper) {
+    return Optional.ofNullable(fields.get(esField))
+      .map(v -> (List<String>) v)
+      .filter(v -> !v.isEmpty())
+      .map(v -> v.stream().map(mapper).collect(Collectors.toList()));
+  }
+
+  private static Optional<List<Integer>> getListIntValue(Map<String, Object> fields, String esField) {
+    return getMappedListValue(fields, esField, Integer::parseInt);
+  }
+
+  private static Optional<List<Long>> getListLongValue(Map<String, Object> fields, String esField) {
+    return getMappedListValue(fields, esField, Long::parseLong);
+  }
+
   private static Optional<Map<String, Object>> getMapValue(
       Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
@@ -128,20 +143,21 @@ public class LiteratureSearchResultConverter
         .filter(v -> !v.isEmpty());
   }
 
+  private static <T> Optional<Set<T>> getMappedSetValue(Map<String, Object> fields, String esField, Function<String,T> mapper) {
+    return Optional.ofNullable(fields.get(esField))
+      .map(v -> (List<String>) v)
+      .filter(v -> !v.isEmpty())
+      .map(v -> v.stream().map(mapper).collect(Collectors.toSet()));
+  }
+
   private static Optional<Set<Country>> getCountrySetValue(
       Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> (List<String>) v)
-        .filter(v -> !v.isEmpty())
-        .map(v -> v.stream().map(Country::fromIsoCode).collect(Collectors.toSet()));
+    return getMappedSetValue(fields, esField, Country::fromIsoCode);
   }
 
   private static Optional<Set<GbifRegion>> getRegionSetValue(
       Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> (List<String>) v)
-        .filter(v -> !v.isEmpty())
-        .map(v -> v.stream().map(GbifRegion::fromString).collect(Collectors.toSet()));
+    return getMappedSetValue(fields, esField, GbifRegion::fromString);
   }
 
   private static Optional<LiteratureType> getLiteratureTypeValue(
@@ -152,26 +168,12 @@ public class LiteratureSearchResultConverter
 
   private static Optional<Set<LiteratureRelevance>> getRelevanceSetValue(
       Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> (List<String>) v)
-        .filter(v -> !v.isEmpty())
-        .map(
-            v ->
-                v.stream()
-                    .map(value -> VocabularyUtils.lookupEnum(value, LiteratureRelevance.class))
-                    .collect(Collectors.toSet()));
+    return getMappedSetValue(fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureRelevance.class));
   }
 
   private static Optional<Set<LiteratureTopic>> getTopicSetValue(
       Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> (List<String>) v)
-        .filter(v -> !v.isEmpty())
-        .map(
-            v ->
-                v.stream()
-                    .map(value -> VocabularyUtils.lookupEnum(value, LiteratureTopic.class))
-                    .collect(Collectors.toSet()));
+    return getMappedSetValue(fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureTopic.class));
   }
 
   private static Optional<List<Map<String, Object>>> getObjectsListValue(

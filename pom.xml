@@ -42,8 +42,8 @@
     <spring-boot.version>2.3.7.RELEASE</spring-boot.version>
     <start-class>org.gbif.literature.LiteratureApplication</start-class>
 
-    <gbif-api.version>0.137</gbif-api.version>
-    <gbif-common-ws.version>1.12</gbif-common-ws.version>
+    <gbif-api.version>0.156-SNAPSHOT</gbif-api.version>
+    <gbif-common-ws.version>1.16-SNAPSHOT</gbif-common-ws.version>
 
     <spring-cloud-openfeign.version>2.2.6.RELEASE</spring-cloud-openfeign.version>
     <spring-cloud-zookeeper.version>2.2.4.RELEASE</spring-cloud-zookeeper.version>
