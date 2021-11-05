@@ -65,10 +65,10 @@ public class LiteratureSearchResultConverter
     getDateValue(fields, "createdAt").ifPresent(result::setPublished);
     getIntegerValue(fields, "day").ifPresent(result::setDay);
     getListValue(fields, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
-    //Elements are mapped to integer even though are mapped as keywords
+    // Elements are mapped to integer even though are mapped as keywords
     getListIntValue(fields, "gbifOccurrenceKey")
-      .map(keys -> keys.stream().map(Integer::longValue)
-      .collect(Collectors.toList())).ifPresent(result::setGbifOccurrenceKey);
+        .map(keys -> keys.stream().map(Integer::longValue).collect(Collectors.toList()))
+        .ifPresent(result::setGbifOccurrenceKey);
     getListIntValue(fields, "gbifTaxonKey").ifPresent(result::setGbifTaxonKey);
     getListIntValue(fields, "gbifHigherTaxonKey").ifPresent(result::setGbifHigherTaxonKey);
     getStringValue(fields, "citationType").ifPresent(result::setCitationType);
@@ -127,7 +127,9 @@ public class LiteratureSearchResultConverter
 
   private static <T> Optional<List<T>> getMappedListValue(
       Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField)).map(v -> removeNulls((List<T>) v)).filter(v -> !v.isEmpty());
+    return Optional.ofNullable(fields.get(esField))
+        .map(v -> removeNulls((List<T>) v))
+        .filter(v -> !v.isEmpty());
   }
 
   private static Optional<List<Integer>> getListIntValue(
