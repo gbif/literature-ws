@@ -25,6 +25,7 @@ import org.gbif.api.vocabulary.Language;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -64,7 +65,10 @@ public class LiteratureSearchResultConverter
     getDateValue(fields, "createdAt").ifPresent(result::setPublished);
     getIntegerValue(fields, "day").ifPresent(result::setDay);
     getListValue(fields, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
-    getListLongValue(fields, "gbifOccurrenceKey").ifPresent(result::setGbifOccurrenceKey);
+    //Elements are mapped to integer even though are mapped as keywords
+    getListIntValue(fields, "gbifOccurrenceKey")
+      .map(keys -> keys.stream().map(Integer::longValue)
+      .collect(Collectors.toList())).ifPresent(result::setGbifOccurrenceKey);
     getListIntValue(fields, "gbifTaxonKey").ifPresent(result::setGbifTaxonKey);
     getListIntValue(fields, "gbifHigherTaxonKey").ifPresent(result::setGbifHigherTaxonKey);
     getStringValue(fields, "citationType").ifPresent(result::setCitationType);
@@ -117,13 +121,13 @@ public class LiteratureSearchResultConverter
 
   private static Optional<List<String>> getListValue(Map<String, Object> fields, String esField) {
     return Optional.ofNullable(fields.get(esField))
-        .map(v -> (List<String>) v)
+        .map(v -> removeNulls((List<String>) v))
         .filter(v -> !v.isEmpty());
   }
 
   private static <T> Optional<List<T>> getMappedListValue(
       Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField)).map(v -> (List<T>) v).filter(v -> !v.isEmpty());
+    return Optional.ofNullable(fields.get(esField)).map(v -> removeNulls((List<T>) v)).filter(v -> !v.isEmpty());
   }
 
   private static Optional<List<Integer>> getListIntValue(
@@ -133,6 +137,10 @@ public class LiteratureSearchResultConverter
 
   private static Optional<List<Long>> getListLongValue(Map<String, Object> fields, String esField) {
     return getMappedListValue(fields, esField);
+  }
+
+  private static <T> List<T> removeNulls(List<T> collection) {
+    return collection.stream().filter(Objects::nonNull).collect(Collectors.toList());
   }
 
   private static Optional<Map<String, Object>> getMapValue(
@@ -145,7 +153,7 @@ public class LiteratureSearchResultConverter
   private static <T> Optional<Set<T>> getMappedSetValue(
       Map<String, Object> fields, String esField, Function<String, T> mapper) {
     return Optional.ofNullable(fields.get(esField))
-        .map(v -> (List<String>) v)
+        .map(v -> removeNulls((List<String>) v))
         .filter(v -> !v.isEmpty())
         .map(v -> v.stream().map(mapper).collect(Collectors.toSet()));
   }
