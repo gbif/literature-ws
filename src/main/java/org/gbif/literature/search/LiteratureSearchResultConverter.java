@@ -137,7 +137,8 @@ public class LiteratureSearchResultConverter
     return getMappedListValue(fields, esField);
   }
 
-  private static Optional<List<Number>> getListNumberValue(Map<String, Object> fields, String esField) {
+  private static Optional<List<Number>> getListNumberValue(
+      Map<String, Object> fields, String esField) {
     return getMappedListValue(fields, esField);
   }
 
