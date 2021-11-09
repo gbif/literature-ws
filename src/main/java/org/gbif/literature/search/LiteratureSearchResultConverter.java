@@ -66,8 +66,8 @@ public class LiteratureSearchResultConverter
     getIntegerValue(fields, "day").ifPresent(result::setDay);
     getListValue(fields, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
     // Elements are mapped to integer even though are mapped as keywords
-    getListIntValue(fields, "gbifOccurrenceKey")
-        .map(keys -> keys.stream().map(Integer::longValue).collect(Collectors.toList()))
+    getListNumberValue(fields, "gbifOccurrenceKey")
+        .map(keys -> keys.stream().map(Number::longValue).collect(Collectors.toList()))
         .ifPresent(result::setGbifOccurrenceKey);
     getListIntValue(fields, "gbifTaxonKey").ifPresent(result::setGbifTaxonKey);
     getListIntValue(fields, "gbifHigherTaxonKey").ifPresent(result::setGbifHigherTaxonKey);
@@ -137,7 +137,7 @@ public class LiteratureSearchResultConverter
     return getMappedListValue(fields, esField);
   }
 
-  private static Optional<List<Long>> getListLongValue(Map<String, Object> fields, String esField) {
+  private static Optional<List<Number>> getListNumberValue(Map<String, Object> fields, String esField) {
     return getMappedListValue(fields, esField);
   }
 
