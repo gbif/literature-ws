@@ -20,12 +20,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableConfigurationProperties
-@ComponentScan(
-    basePackages = {
-        "org.gbif.ws.server.mapper",
-        "org.gbif.literature"
-    }
-)
+@ComponentScan(basePackages = {"org.gbif.ws.server.mapper", "org.gbif.literature"})
 public class LiteratureApplication {
 
   public static void main(String[] args) {
