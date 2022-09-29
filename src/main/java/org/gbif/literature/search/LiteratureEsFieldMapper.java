@@ -60,6 +60,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put(LiteratureSearchParameter.GBIF_OCCURRENCE_KEY, "gbifOccurrenceKey")
           .put(LiteratureSearchParameter.GBIF_HIGHERTAXON_KEY, "gbifHigherTaxonKey")
           .put(LiteratureSearchParameter.CITATION_TYPE, "citationType")
+          .put(LiteratureSearchParameter.GBIF_NETWORK_KEY, "gbifNetworkKey")
           .build();
 
   public static final Map<String, Integer> CARDINALITIES =
@@ -143,6 +144,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
       "relevance",
       "topics",
       "gbifDownloadKey",
+      "gbifNetworkKey",
       "peerReview",
       "openAccess"
     };
