@@ -73,6 +73,9 @@ public class LiteratureSearchResultConverter
     getListIntValue(fields, "gbifHigherTaxonKey").ifPresent(result::setGbifHigherTaxonKey);
     getStringValue(fields, "citationType").ifPresent(result::setCitationType);
     getRegionSetValue(fields, "gbifRegion").ifPresent(result::setGbifRegion);
+    getListUUIDValue(fields, "gbifNetworkKey").ifPresent(result::setGbifNetworkKey);
+    getListValue(fields, "gbifProjectIdentifier").ifPresent(result::setGbifProjectIdentifier);
+    getListValue(fields, "gbifProgrammeAcronym").ifPresent(result::setGbifProgrammeAcronym);
     getUuidValue(fields, "id").ifPresent(result::setId);
     getMapValue(fields, "identifiers").ifPresent(result::setIdentifiers);
     getListValue(fields, "keywords").ifPresent(result::setKeywords);
@@ -134,6 +137,11 @@ public class LiteratureSearchResultConverter
 
   private static Optional<List<Integer>> getListIntValue(
       Map<String, Object> fields, String esField) {
+    return getMappedListValue(fields, esField);
+  }
+
+  private static Optional<List<UUID>> getListUUIDValue(
+    Map<String, Object> fields, String esField) {
     return getMappedListValue(fields, esField);
   }
 
