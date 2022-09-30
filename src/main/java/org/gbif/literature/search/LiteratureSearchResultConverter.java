@@ -75,7 +75,7 @@ public class LiteratureSearchResultConverter
     getRegionSetValue(fields, "gbifRegion").ifPresent(result::setGbifRegion);
     getListUUIDValue(fields, "gbifNetworkKey").ifPresent(result::setGbifNetworkKey);
     getListValue(fields, "gbifProjectIdentifier").ifPresent(result::setGbifProjectIdentifier);
-    getListValue(fields, "gbifProgrammeAcronym").ifPresent(result::setGbifProgrammeAcronym);
+    getListValue(fields, "gbifProgrammeAcronym").ifPresent(result::setGbifProgramme);
     getUuidValue(fields, "id").ifPresent(result::setId);
     getMapValue(fields, "identifiers").ifPresent(result::setIdentifiers);
     getListValue(fields, "keywords").ifPresent(result::setKeywords);

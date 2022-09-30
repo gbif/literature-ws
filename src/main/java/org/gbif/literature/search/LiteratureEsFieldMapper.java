@@ -61,7 +61,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put(LiteratureSearchParameter.GBIF_HIGHERTAXON_KEY, "gbifHigherTaxonKey")
           .put(LiteratureSearchParameter.CITATION_TYPE, "citationType")
           .put(LiteratureSearchParameter.GBIF_NETWORK_KEY, "gbifNetworkKey")
-          .put(LiteratureSearchParameter.GBIF_PROJECT_ID, "gbifProjectIdentifier")
+          .put(LiteratureSearchParameter.GBIF_PROJECT_IDENTIFIER, "gbifProjectIdentifier")
           .put(LiteratureSearchParameter.GBIF_PROGRAMME, "gbifProgrammeAcronym")
           .build();
 
