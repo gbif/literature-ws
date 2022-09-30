@@ -140,8 +140,7 @@ public class LiteratureSearchResultConverter
     return getMappedListValue(fields, esField);
   }
 
-  private static Optional<List<UUID>> getListUUIDValue(
-    Map<String, Object> fields, String esField) {
+  private static Optional<List<UUID>> getListUUIDValue(Map<String, Object> fields, String esField) {
     return getMappedListValue(fields, esField, UUID::fromString);
   }
 
@@ -170,11 +169,11 @@ public class LiteratureSearchResultConverter
   }
 
   private static <T> Optional<List<T>> getMappedListValue(
-    Map<String, Object> fields, String esField, Function<String, T> mapper) {
+      Map<String, Object> fields, String esField, Function<String, T> mapper) {
     return Optional.ofNullable(fields.get(esField))
-      .map(v -> removeNulls((List<String>) v))
-      .filter(v -> !v.isEmpty())
-      .map(v -> v.stream().map(mapper).collect(Collectors.toList()));
+        .map(v -> removeNulls((List<String>) v))
+        .filter(v -> !v.isEmpty())
+        .map(v -> v.stream().map(mapper).collect(Collectors.toList()));
   }
 
   private static Optional<Set<Country>> getCountrySetValue(
