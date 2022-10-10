@@ -13,6 +13,11 @@
  */
 package org.gbif.literature.resource;
 
+import io.swagger.v3.oas.annotations.links.Link;
+import io.swagger.v3.oas.annotations.links.LinkParameter;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
@@ -51,12 +56,13 @@ import io.swagger.v3.oas.annotations.servers.Server;
             title = "Literature API",
             version = "v1",
             description =
-                "This API enables you to search for literature indexed by GBIF, including peer-reviewed papers citing GBIF datasets and downloads. It powers the Literature search on GBIF.org.",
+                "This API enables you to search for literature indexed by GBIF, including peer-reviewed papers citing GBIF datasets and downloads. It powers the [Literature search](https://www.gbif.org/resource/search?contentType=literature) on GBIF.org.",
             termsOfService = "https://www.gbif.org/terms"),
     servers = {
       @Server(url = "https://api.gbif.org/v1/", description = "Production"),
       @Server(url = "https://api.gbif-uat.org/v1/", description = "User testing")
     })
+@Tag(name = "Literature Resource", description = "Literature indexed by GBIF")
 @RequestMapping(value = "literature", produces = MediaType.APPLICATION_JSON_VALUE)
 @RestController
 public class LiteratureResource {
@@ -74,21 +80,21 @@ public class LiteratureResource {
       value = {
         @Parameter(
             name = "citationType",
-            description = "",
+            description = "The manner in which GBIF is cited in a paper",
             schema = @Schema(implementation = String.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
             name = "countriesOfCoverage",
             description =
-                "Country or area of institution with which author is affiliated, e.g. DK (for Denmark). Country codes are listed in our Country enum.",
+                "Country or area of institution with which author is affiliated, e.g. `DK` (recommended) or `Denmark`. Country codes are listed in our [Country enum](https://api.gbif.org/v1/enumeration/country).",
             schema = @Schema(implementation = Country.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
             name = "countriesOfResearcher",
             description =
-                "Country or area of focus of study, e.g. BR (for Brazil). Country codes are listed in our Country enum.",
+                "Country or area of focus of study, e.g. `BR` (recommended) or `Brazil`. Country codes are listed in our [Country enum](https://api.gbif.org/v1/enumeration/country).",
             schema = @Schema(implementation = Country.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
@@ -112,19 +118,19 @@ public class LiteratureResource {
             explode = Explode.TRUE),
         @Parameter(
             name = "gbifHigherTaxonKey",
-            description = "",
+            description = "All parent keys of any taxon that is the focus of the paper (see gbifTaxonKey)",
             schema = @Schema(implementation = Integer.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
             name = "gbifOccurrenceKey",
-            description = "",
+            description = "Any GBIF occurrence keys directly mentioned in a paper",
             schema = @Schema(implementation = Long.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
             name = "gbifTaxonKey",
-            description = "",
+            description = "Key(s) of taxa that are the focus of a paper",
             schema = @Schema(implementation = Integer.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
@@ -158,7 +164,7 @@ public class LiteratureResource {
             explode = Explode.TRUE),
         @Parameter(
             name = "relevance",
-            description = "Relevance to GBIF community, see #literature relevance#.",
+            description = "Relevance to GBIF community, see [literature relevance](https://www.gbif.org/faq?question=literature-relevance).",
             schema = @Schema(implementation = LiteratureRelevance.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
@@ -201,19 +207,19 @@ public class LiteratureResource {
         @Parameter(
             name = "facetMincount",
             description =
-                "Used in combination with the facet parameter. Set facetMincount={#} to exclude facets with a count less than {#}, e.g. /search?facet=type&limit=0&facetMincount=10000 only shows the type value 'OCCURRENCE' because 'CHECKLIST' and 'METADATA' have counts less than 10000.",
+                "Used in combination with the facet parameter. Set `facetMincount=X` to exclude facets with a count less than `X`, e.g. [`/search?facet=type&limit=0&facetMincount=10000`](https://api.gbif.org/v1/literature/search?facet=type&limit=0&facetMincount=10000) only shows the type value `OCCURRENCE` because `CHECKLIST` and `METADATA` have counts less than 10000.",
             schema = @Schema(implementation = Integer.class),
             in = ParameterIn.QUERY),
         @Parameter(
             name = "facetMultiselect",
             description =
-                "Used in combination with the facet parameter. Set facetMultiselect=true to still return counts for values that are not currently filtered, e.g. /search?facet=type&limit=0&type=CHECKLIST&facetMultiselect=true still shows type values 'OCCURRENCE' and 'METADATA' even though type is being filtered by type=CHECKLIST",
+                "Used in combination with the facet parameter. Set `facetMultiselect=true` to still return counts for values that are not currently filtered, e.g. [`/search?facet=type&limit=0&type=CHECKLIST&facetMultiselect=true`](https://api.gbif.org/v1/literature/search?facet=type&limit=0&type=CHECKLIST&facetMultiselect=true) still shows type values `OCCURRENCE` and `METADATA` even though type is being filtered by `type=CHECKLIST`",
             schema = @Schema(implementation = Boolean.class),
             in = ParameterIn.QUERY),
         @Parameter(
             name = "hl",
             description =
-                "Set hl=true to highlight terms matching the query when in fulltext search fields. The highlight will be an emphasis tag of class 'gbifH1' e.g. /search?q=plant&hl=true. Fulltext search fields include: title, keyword, country, publishing country, publishing organization title, hosting organization title, and description. One additional full text field is searched which includes information from metadata documents, but the text of this field is not returned in the response.",
+                "Set `hl=true` to highlight terms matching the query when in fulltext search fields. The highlight will be an emphasis tag of class `gbifH1` e.g. [`/search?q=plant&hl=true`](https://api.gbif.org/v1/literature/search?q=plant&hl=true). Fulltext search fields include: title, keyword, country, publishing country, publishing organization title, hosting organization title, and description. One additional full text field is searched which includes information from metadata documents, but the text of this field is not returned in the response.",
             schema = @Schema(implementation = Boolean.class),
             in = ParameterIn.QUERY),
         @Parameter(
@@ -231,7 +237,7 @@ public class LiteratureResource {
         @Parameter(
             name = "offset",
             description =
-                "Determines the offset for the search results. A limit of 20 and offset of 20, will get the second page of 20 results. ",
+                "Determines the offset for the search results. A limit of 20 and offset of 40 will get the third page of 20 results. ",
             schema = @Schema(implementation = Integer.class, minimum = "0"),
             in = ParameterIn.QUERY)
       })
@@ -244,6 +250,11 @@ public class LiteratureResource {
               @Content(
                   mediaType = "application/json",
                   schema = @Schema(implementation = LiteratureSearchResult.class))
+            },
+            links = {
+              @Link(name = "GetLiteratureById", operationId = "getLiteratureById", parameters = {
+                @LinkParameter(name = "uuid", expression = "$response.body#/id")
+              })
             }),
         @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
       })
@@ -254,6 +265,7 @@ public class LiteratureResource {
   }
 
   @Operation(
+      operationId = "getLiteratureById",
       summary = "Literature item by id",
       description = "Retrieve details for a single literature item")
   @ApiResponses(
