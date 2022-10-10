@@ -13,11 +13,6 @@
  */
 package org.gbif.literature.resource;
 
-import io.swagger.v3.oas.annotations.links.Link;
-import io.swagger.v3.oas.annotations.links.LinkParameter;
-
-import io.swagger.v3.oas.annotations.tags.Tag;
-
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
@@ -44,11 +39,14 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.enums.Explode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.links.Link;
+import io.swagger.v3.oas.annotations.links.LinkParameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @OpenAPIDefinition(
     info =
@@ -118,7 +116,8 @@ public class LiteratureResource {
             explode = Explode.TRUE),
         @Parameter(
             name = "gbifHigherTaxonKey",
-            description = "All parent keys of any taxon that is the focus of the paper (see gbifTaxonKey)",
+            description =
+                "All parent keys of any taxon that is the focus of the paper (see gbifTaxonKey)",
             schema = @Schema(implementation = Integer.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
@@ -164,7 +163,8 @@ public class LiteratureResource {
             explode = Explode.TRUE),
         @Parameter(
             name = "relevance",
-            description = "Relevance to GBIF community, see [literature relevance](https://www.gbif.org/faq?question=literature-relevance).",
+            description =
+                "Relevance to GBIF community, see [literature relevance](https://www.gbif.org/faq?question=literature-relevance).",
             schema = @Schema(implementation = LiteratureRelevance.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
@@ -252,9 +252,10 @@ public class LiteratureResource {
                   schema = @Schema(implementation = LiteratureSearchResult.class))
             },
             links = {
-              @Link(name = "GetLiteratureById", operationId = "getLiteratureById", parameters = {
-                @LinkParameter(name = "uuid", expression = "$response.body#/id")
-              })
+              @Link(
+                  name = "GetLiteratureById",
+                  operationId = "getLiteratureById",
+                  parameters = {@LinkParameter(name = "uuid", expression = "$response.body#/id")})
             }),
         @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
       })
