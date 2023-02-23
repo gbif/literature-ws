@@ -56,7 +56,7 @@ public class LiteratureSearchResultConverter
     LiteratureSearchResult result = new LiteratureSearchResult();
     Map<String, Object> fields = searchHit.getSourceAsMap();
 
-    getStringValue(fields, "abstract").ifPresent(result::setAbstr);
+    getStringValue(fields, "abstract").ifPresent(result::setAbstract);
     getStringValue(fields, "accessed").ifPresent(result::setDiscovered);
     getObjectsListValue(fields, "authors").ifPresent(result::setAuthors);
     getCountrySetValue(fields, "countriesOfCoverage").ifPresent(result::setCountriesOfCoverage);
