@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.supercsv.cellprocessor.FmtDate;
+import org.supercsv.cellprocessor.Optional;
 import org.supercsv.cellprocessor.ParseInt;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.io.CsvBeanWriter;
@@ -143,21 +144,21 @@ public class CsvWriter<T> {
             })
         .processors(
             new CellProcessor[] {
-              new CleanStringProcessor(), // title
-              new AuthorProcessor(), //  authors
-              new ParseInt(), //  year,
-              new ParseInt(), // month,
-              new ParseInt(), // day,
-              new CleanStringProcessor(), // source,
-              new ListStringProcessor(), // keywords,
-              new LiteratureTypeProcessor(), // literatureType,
-              new ListStringProcessor(), // websites,
-              new IdentifiersProcessor(), // identifiers,
-              new UUIDProcessor(), // id,
-              new CleanStringProcessor(), // abstr,
-              new SetLiteratureTopicProcessor(), // topics,
-              new FmtDate(StdDateFormat.DATE_FORMAT_STR_ISO8601), // added,
-              new ListStringProcessor(), // gbifDownloadKey"
+              new Optional(new CleanStringProcessor()), // title
+              new Optional(new AuthorProcessor()), //  authors
+              new Optional(new ParseInt()), //  year,
+              new Optional(new ParseInt()), // month,
+              new Optional(new ParseInt()), // day,
+              new Optional(new CleanStringProcessor()), // source,
+              new Optional(new ListStringProcessor()), // keywords,
+              new Optional(new LiteratureTypeProcessor()), // literatureType,
+              new Optional(new ListStringProcessor()), // websites,
+              new Optional(new IdentifiersProcessor()), // identifiers,
+              new Optional(new UUIDProcessor()), // id,
+              new Optional(new CleanStringProcessor()), // abstr,
+              new Optional(new SetLiteratureTopicProcessor()), // topics,
+              new Optional(new FmtDate(StdDateFormat.DATE_FORMAT_STR_ISO8601)), // added,
+              new Optional(new ListStringProcessor()), // gbifDownloadKey"
             })
         .preference(preference)
         .pager(pager)
