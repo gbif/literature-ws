@@ -44,6 +44,7 @@
     <start-class>org.gbif.literature.LiteratureApplication</start-class>
     <springdoc-openapi-ui.version>1.5.8</springdoc-openapi-ui.version>
     <swagger-annotations.version>2.2.0</swagger-annotations.version>
+    <super-csv.version>2.4.0</super-csv.version>
 
     <gbif-api.version>1.2.0-SNAPSHOT</gbif-api.version>
     <gbif-common-ws.version>1.22</gbif-common-ws.version>
@@ -150,6 +151,18 @@
           <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!-- CSV exports -->
+    <dependency>
+      <groupId>net.sf.supercsv</groupId>
+      <artifactId>super-csv</artifactId>
+      <version>${super-csv.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.supercsv</groupId>
+      <artifactId>super-csv-dozer</artifactId>
+      <version>${super-csv.version}</version>
     </dependency>
 
     <!-- logging -->
