@@ -13,6 +13,7 @@
  */
 package org.gbif.literature.resource;
 
+import org.gbif.api.model.common.export.ExportFormat;
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
@@ -21,15 +22,25 @@ import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.vocabulary.Country;
+import org.gbif.literature.export.CsvWriter;
+import org.gbif.literature.export.LiteraturePager;
 import org.gbif.literature.search.LiteratureSearchService;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.UUID;
 
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -64,6 +75,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping(value = "literature", produces = MediaType.APPLICATION_JSON_VALUE)
 @RestController
 public class LiteratureResource {
+
+  // Export header prefix
+  private static final String FILE_HEADER_PRE = "attachment; filename=literature_";
+
+  // Page size to iterate over literature search export service
+  private static final int EXPORT_LIMIT = 5_000;
 
   private final LiteratureSearchService searchService;
 
@@ -253,8 +270,8 @@ public class LiteratureResource {
             },
             links = {
               @Link(
-                  name = "GetLiteratureById",
-                  operationId = "getLiteratureById",
+                  name = "SearchLiterature",
+                  operationId = "searchLiterature",
                   parameters = {@LinkParameter(name = "uuid", expression = "$response.body#/id")})
             }),
         @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
@@ -299,5 +316,211 @@ public class LiteratureResource {
         .get(uuid)
         .map(ResponseEntity::ok)
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  @Operation(
+      summary = "Export literature",
+      description = "Export the literature in TSV or CSV format.")
+  @Parameters(
+      value = {
+        @Parameter(
+            name = "citationType",
+            description = "The manner in which GBIF is cited in a paper",
+            schema = @Schema(implementation = String.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "countriesOfCoverage",
+            description =
+                "Country or area of institution with which author is affiliated, e.g. `DK` (recommended) or `Denmark`. Country codes are listed in our [Country enum](https://api.gbif.org/v1/enumeration/country).",
+            schema = @Schema(implementation = Country.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "countriesOfResearcher",
+            description =
+                "Country or area of focus of study, e.g. `BR` (recommended) or `Brazil`. Country codes are listed in our [Country enum](https://api.gbif.org/v1/enumeration/country).",
+            schema = @Schema(implementation = Country.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "doi",
+            description = "Digital Object Identifier (DOI)",
+            schema = @Schema(implementation = String.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "gbifDatasetKey",
+            description = "GBIF dataset referenced in publication",
+            schema = @Schema(implementation = UUID.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "gbifDownloadKey",
+            description = "Download referenced in publication",
+            schema = @Schema(implementation = String.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "gbifHigherTaxonKey",
+            description =
+                "All parent keys of any taxon that is the focus of the paper (see gbifTaxonKey)",
+            schema = @Schema(implementation = Integer.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "gbifOccurrenceKey",
+            description = "Any GBIF occurrence keys directly mentioned in a paper",
+            schema = @Schema(implementation = Long.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "gbifTaxonKey",
+            description = "Key(s) of taxa that are the focus of a paper",
+            schema = @Schema(implementation = Integer.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "literatureType",
+            description = "Type of literature, e.g. journal article.",
+            schema = @Schema(implementation = LiteratureType.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "openAccess",
+            description = "Is publication Open Access?",
+            schema = @Schema(implementation = Boolean.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "peerReview",
+            description = "Has publication undergone peer-review?",
+            schema = @Schema(implementation = Boolean.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "publisher",
+            description = "Publisher of journal",
+            schema = @Schema(implementation = String.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "publishingOrganizationKey",
+            description = "Publisher whose dataset is referenced in publication",
+            schema = @Schema(implementation = UUID.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "relevance",
+            description =
+                "Relevance to GBIF community, see [literature relevance](https://www.gbif.org/faq?question=literature-relevance).",
+            schema = @Schema(implementation = LiteratureRelevance.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "source",
+            description = "Journal of publication",
+            schema = @Schema(implementation = String.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "topics",
+            description = "Topic of publication",
+            schema = @Schema(implementation = LiteratureTopic.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "year",
+            description = "Year of publication",
+            schema = @Schema(implementation = Integer.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
+        @Parameter(
+            name = "facet",
+            description =
+                "A facet name used to retrieve the most frequent values for a field. This parameter may by repeated to request multiple facets",
+            schema = @Schema(implementation = String.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "facetLimit",
+            description =
+                "Facet parameters allow paging requests using the parameters facetOffset and facetLimit",
+            schema = @Schema(implementation = Integer.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "facetOffset",
+            description =
+                "Facet parameters allow paging requests using the parameters facetOffset and facetLimit",
+            schema = @Schema(implementation = Integer.class, minimum = "0"),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "facetMincount",
+            description =
+                "Used in combination with the facet parameter. Set `facetMincount=X` to exclude facets with a count less than `X`, e.g. [`/search?facet=type&limit=0&facetMincount=10000`](https://api.gbif.org/v1/literature/search?facet=type&limit=0&facetMincount=10000) only shows the type value `OCCURRENCE` because `CHECKLIST` and `METADATA` have counts less than 10000.",
+            schema = @Schema(implementation = Integer.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "facetMultiselect",
+            description =
+                "Used in combination with the facet parameter. Set `facetMultiselect=true` to still return counts for values that are not currently filtered, e.g. [`/search?facet=type&limit=0&type=CHECKLIST&facetMultiselect=true`](https://api.gbif.org/v1/literature/search?facet=type&limit=0&type=CHECKLIST&facetMultiselect=true) still shows type values `OCCURRENCE` and `METADATA` even though type is being filtered by `type=CHECKLIST`",
+            schema = @Schema(implementation = Boolean.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "hl",
+            description =
+                "Set `hl=true` to highlight terms matching the query when in fulltext search fields. The highlight will be an emphasis tag of class `gbifH1` e.g. [`/search?q=plant&hl=true`](https://api.gbif.org/v1/literature/search?q=plant&hl=true). Fulltext search fields include: title, keyword, country, publishing country, publishing organization title, hosting organization title, and description. One additional full text field is searched which includes information from metadata documents, but the text of this field is not returned in the response.",
+            schema = @Schema(implementation = Boolean.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "q",
+            description =
+                "Simple full text search parameter. The value for this parameter can be a simple word or a phrase. Wildcards are not supported",
+            schema = @Schema(implementation = String.class),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "limit",
+            description =
+                "Controls the number of results in the page. Using too high a value will be overwritten with the default maximum threshold, depending on the service. Sensible defaults are used so this may be omitted.",
+            schema = @Schema(implementation = Integer.class, minimum = "0"),
+            in = ParameterIn.QUERY),
+        @Parameter(
+            name = "offset",
+            description =
+                "Determines the offset for the search results. A limit of 20 and offset of 40 will get the third page of 20 results. ",
+            schema = @Schema(implementation = Integer.class, minimum = "0"),
+            in = ParameterIn.QUERY)
+      })
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Literature items found",
+            content = {
+              @Content(
+                  mediaType = "application/json",
+                  schema = @Schema(implementation = LiteratureSearchResult.class))
+            },
+            links = {
+              @Link(
+                  name = "ExportLiterature",
+                  operationId = "exportLiterature",
+                  parameters = {@LinkParameter(name = "uuid", expression = "$response.body#/id")})
+            }),
+        @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
+      })
+  @GetMapping("export")
+  public void export(
+      HttpServletResponse response,
+      @Parameter(hidden = true) LiteratureSearchRequest searchRequest,
+      @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format)
+      throws IOException {
+
+    response.setHeader(
+        HttpHeaders.CONTENT_DISPOSITION,
+        FILE_HEADER_PRE + System.currentTimeMillis() + '.' + format.name().toLowerCase());
+
+    try (Writer writer = new BufferedWriter(new OutputStreamWriter(response.getOutputStream()))) {
+      CsvWriter.literatureSearchResultCsvWriter(
+              new LiteraturePager(searchService, searchRequest, EXPORT_LIMIT), format)
+          .export(writer);
+    }
   }
 }
