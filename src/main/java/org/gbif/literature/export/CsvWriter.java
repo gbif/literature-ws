@@ -119,7 +119,7 @@ public class CsvWriter<T> {
               "websites",
               "identifiers",
               "id",
-              "abstr",
+              "abstract",
               "topics",
               "added",
               "gbifDownloadKey"
@@ -133,14 +133,14 @@ public class CsvWriter<T> {
               "day",
               "source",
               "keywords",
-              "literatureType",
+              "literature_type",
               "websites",
               "identifiers",
               "id",
-              "abstr",
+              "abstract",
               "topics",
               "added",
-              "gbifDownloadKey"
+              "gbif_download_key"
             })
         .processors(
             new CellProcessor[] {
