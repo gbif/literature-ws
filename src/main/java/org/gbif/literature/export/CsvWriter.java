@@ -17,6 +17,7 @@ import org.gbif.api.model.common.export.ExportFormat;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
+import org.gbif.api.vocabulary.Country;
 
 import java.io.Writer;
 import java.util.Arrays;
@@ -27,9 +28,9 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.supercsv.cellprocessor.FmtBool;
 import org.supercsv.cellprocessor.FmtDate;
 import org.supercsv.cellprocessor.Optional;
-import org.supercsv.cellprocessor.ParseInt;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.io.CsvBeanWriter;
 import org.supercsv.io.ICsvBeanWriter;
@@ -110,10 +111,14 @@ public class CsvWriter<T> {
             new String[] {
               "title",
               "authors",
-              "year",
-              "month",
-              "day",
               "source",
+              "discovered",
+              "published",
+              "openAccess",
+              "peerReview",
+              "citationType",
+              "countriesOfCoverage",
+              "countriesOfResearcher",
               "keywords",
               "literatureType",
               "websites",
@@ -128,10 +133,14 @@ public class CsvWriter<T> {
             new String[] {
               "title",
               "authors",
-              "year",
-              "month",
-              "day",
               "source",
+              "discovered",
+              "published",
+              "open_access",
+              "peer_review",
+              "citationType",
+              "countries_of_coverage",
+              "countries_of_researcher",
               "keywords",
               "literature_type",
               "websites",
@@ -146,10 +155,14 @@ public class CsvWriter<T> {
             new CellProcessor[] {
               new Optional(new CleanStringProcessor()), // title
               new Optional(new AuthorProcessor()), //  authors
-              new Optional(new ParseInt()), //  year,
-              new Optional(new ParseInt()), // month,
-              new Optional(new ParseInt()), // day,
               new Optional(new CleanStringProcessor()), // source,
+              new Optional(new CleanStringProcessor()), // discovered,
+              new Optional(new FmtDate(StdDateFormat.DATE_FORMAT_STR_ISO8601)), // published,
+              new Optional(new FmtBool("true", "false")), // openAccess,
+              new Optional(new FmtBool("true", "false")), // peerReview,
+              new Optional(new CleanStringProcessor()), // citationType,
+              new Optional(new CountrySetProcessor()), // countriesOfCoverage,
+              new Optional(new CountrySetProcessor()), // countriesOfResearcher,
               new Optional(new ListStringProcessor()), // keywords,
               new Optional(new LiteratureTypeProcessor()), // literatureType,
               new Optional(new ListStringProcessor()), // websites,
@@ -158,7 +171,7 @@ public class CsvWriter<T> {
               new Optional(new CleanStringProcessor()), // abstract,
               new Optional(new SetLiteratureTopicProcessor()), // topics,
               new Optional(new FmtDate(StdDateFormat.DATE_FORMAT_STR_ISO8601)), // added,
-              new Optional(new ListStringProcessor()), // gbifDownloadKey
+              new Optional(new ListStringProcessor()) // gbifDownloadKey
             })
         .preference(preference)
         .pager(pager)
@@ -267,6 +280,17 @@ public class CsvWriter<T> {
     @Override
     public String execute(Object value, CsvContext csvContext) {
       return value != null ? toString(((Map<String, Object>) value)) : "";
+    }
+  }
+
+  public static class CountrySetProcessor implements CellProcessor {
+
+    @Override
+    public String execute(Object value, CsvContext csvContext) {
+      return value != null
+          ? ((Set<Country>) value)
+              .stream().map(Country::name).collect(Collectors.joining(ARRAY_DELIMITER))
+          : "";
     }
   }
 }
