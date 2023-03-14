@@ -464,7 +464,7 @@ public class LiteratureResource {
             description = "Literature items found",
             content = {
               @Content(
-                  mediaType = "application/json",
+                  mediaType = "application/octet-stream",
                   schema = @Schema(implementation = LiteratureSearchResult.class))
             },
             links = {
@@ -475,7 +475,7 @@ public class LiteratureResource {
             }),
         @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
       })
-  @GetMapping("export")
+  @GetMapping(value = "export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public void export(
       HttpServletResponse response,
       @Parameter(hidden = true) LiteratureSearchRequest searchRequest,

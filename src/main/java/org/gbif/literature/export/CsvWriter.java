@@ -155,10 +155,10 @@ public class CsvWriter<T> {
               new Optional(new ListStringProcessor()), // websites,
               new Optional(new IdentifiersProcessor()), // identifiers,
               new Optional(new UUIDProcessor()), // id,
-              new Optional(new CleanStringProcessor()), // abstr,
+              new Optional(new CleanStringProcessor()), // abstract,
               new Optional(new SetLiteratureTopicProcessor()), // topics,
               new Optional(new FmtDate(StdDateFormat.DATE_FORMAT_STR_ISO8601)), // added,
-              new Optional(new ListStringProcessor()), // gbifDownloadKey"
+              new Optional(new ListStringProcessor()), // gbifDownloadKey
             })
         .preference(preference)
         .pager(pager)
