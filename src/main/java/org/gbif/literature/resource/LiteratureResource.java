@@ -323,8 +323,8 @@ public class LiteratureResource {
   }
 
   @Operation(
-      summary = "Export literature",
-      description = "Export of literature")
+      summary = "Export literature search results",
+      description = "Exports the result of a literature search. Limited to " + EXPORT_LIMIT + " results.")
   @Parameters(
       value = {
         @Parameter(

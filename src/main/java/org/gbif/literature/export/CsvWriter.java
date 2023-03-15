@@ -138,7 +138,7 @@ public class CsvWriter<T> {
               "published",
               "open_access",
               "peer_review",
-              "citationType",
+              "citation_type",
               "countries_of_coverage",
               "countries_of_researcher",
               "keywords",
