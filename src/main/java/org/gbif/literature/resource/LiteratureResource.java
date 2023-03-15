@@ -253,7 +253,6 @@ public class LiteratureResource {
     }
   )
   @CommonParameters.QParameter
-  @Pageable.OffsetLimitParameters
   @interface CommonSearchParameters {}
 
   @Operation(
@@ -261,6 +260,7 @@ public class LiteratureResource {
       description = "Full-text and parameterized search across all literature")
   @CommonSearchParameters
   @CommonParameters.HighlightParameter
+  @Pageable.OffsetLimitParameters
   @FacetedSearchRequest.FacetParameters
   @ApiResponses(
       value = {
