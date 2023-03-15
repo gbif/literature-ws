@@ -11,14 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.gbif.literature;
+package org.gbif.literature.resource;
 
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
-import org.gbif.api.model.literature.search.LiteratureSearchRequest;
-import org.gbif.literature.resource.LiteratureResource;
 import org.gbif.literature.search.LiteratureEsFieldMapper;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,9 +29,9 @@ import static org.springframework.test.util.AssertionErrors.assertTrue;
 public class LiteratureDocumentationTests {
 
   @Test
-  public void searchParametersDocumented() throws Exception {
-    Method searchMethod = LiteratureResource.class.getMethod("search", LiteratureSearchRequest.class);
-    Set documentedParameters = Arrays.stream(searchMethod.getAnnotation(Parameters.class).value()).map(p -> p.name()).collect(Collectors.toSet());
+  public void searchParametersDocumented() {
+    Set documentedParameters = Arrays.stream(LiteratureResource.CommonSearchParameters.class.getAnnotation(Parameters.class).value())
+      .map(p -> p.name()).collect(Collectors.toSet());
 
     LiteratureEsFieldMapper fieldMapper = new LiteratureEsFieldMapper();
 
