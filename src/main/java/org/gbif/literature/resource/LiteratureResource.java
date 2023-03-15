@@ -33,6 +33,10 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletResponse;
@@ -62,6 +66,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.METHOD;
 
 @OpenAPIDefinition(
     info =
@@ -97,155 +104,163 @@ public class LiteratureResource {
   private static final String REPEATED =
       "\n\n*This parameter may be repeated to search for multiple values.*";
 
+  // Search parameters shared between the standard search and the export.
+  @Target({METHOD, ANNOTATION_TYPE})
+  @Retention(RetentionPolicy.RUNTIME)
+  @Inherited
+  @Parameters(
+    value = {
+      @Parameter(
+        name = "citationType",
+        description =
+          "The manner in which GBIF is cited in a paper.\n\n"
+            + "Make a [facet query](https://api.gbif.org/v1/literature/search?limit=0&facet=citationType) for available values."
+            + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = String.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "countriesOfCoverage",
+        description =
+          "Country or area of focus of study. Country codes are listed in our "
+            + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
+            + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = Country.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "countriesOfResearcher",
+        description =
+          "Country or area of institution with which author is affiliated. Country codes are listed in our "
+            + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
+            + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = Country.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "doi",
+        description = "Digital Object Identifier (DOI) of the literature item." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = String.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifDatasetKey",
+        description = "GBIF dataset referenced in publication." + REPEATED,
+        schema = @Schema(implementation = UUID.class),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifDownloadKey",
+        description = "GBIF download referenced in publication." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = String.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifHigherTaxonKey",
+        description =
+          "All parent keys of any taxon that is the focus of the paper (see `gbifTaxonKey`)"
+            + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = Integer.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifNetworkKey",
+        description = "GBIF network referenced in publication." + REPEATED,
+        schema = @Schema(implementation = UUID.class),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifOccurrenceKey",
+        description = "Any GBIF occurrence keys directly mentioned in a paper." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = Long.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifProjectIdentifier", // TODO
+        description = "GBIF dataset referenced in publication." + REPEATED,
+        schema = @Schema(implementation = UUID.class),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifProgrammeAcronym", // TODO
+        description = "GBIF dataset referenced in publication." + REPEATED,
+        schema = @Schema(implementation = UUID.class),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "gbifTaxonKey",
+        description =
+          "Key(s) from the GBIF backbone of taxa that are the focus of a paper." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = Integer.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "literatureType",
+        description = "Type of literature, e.g. journal article." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = LiteratureType.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "openAccess",
+        description = "Is the publication Open Access?",
+        schema = @Schema(implementation = Boolean.class),
+        in = ParameterIn.QUERY),
+      @Parameter(
+        name = "peerReview",
+        description = "Has the publication undergone peer review?",
+        schema = @Schema(implementation = Boolean.class),
+        in = ParameterIn.QUERY),
+      @Parameter(
+        name = "publisher",
+        description = "Publisher of journal." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = String.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "publishingOrganizationKey",
+        description = "Publisher whose dataset is referenced in publication." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = UUID.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "relevance",
+        description =
+          "Relevance to GBIF community, see [literature relevance](https://www.gbif.org/faq?question=literature-relevance)."
+            + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = LiteratureRelevance.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "source",
+        description = "Journal of publication." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = String.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "topics",
+        description = "Topic of publication." + REPEATED,
+        array = @ArraySchema(schema = @Schema(implementation = LiteratureTopic.class)),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE),
+      @Parameter(
+        name = "year",
+        description =
+          "Year of publication.  This can be a single range such as "
+            + "`2019,2021`, or can be repeated to search multiple years.",
+        schema = @Schema(implementation = Integer.class),
+        in = ParameterIn.QUERY,
+        explode = Explode.TRUE)
+    }
+  )
+  @CommonParameters.QParameter
+  @Pageable.OffsetLimitParameters
+  @interface CommonSearchParameters {}
+
   @Operation(
       summary = "Search literature",
       description = "Full-text and parameterized search across all literature")
-  @Parameters(
-      value = {
-        @Parameter(
-            name = "citationType",
-            description =
-                "The manner in which GBIF is cited in a paper.\n\n"
-                    + "Make a [facet query](https://api.gbif.org/v1/literature/search?limit=0&facet=citationType) for available values."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "countriesOfCoverage",
-            description =
-                "Country or area of focus of study. Country codes are listed in our "
-                    + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Country.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "countriesOfResearcher",
-            description =
-                "Country or area of institution with which author is affiliated. Country codes are listed in our "
-                    + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Country.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "doi",
-            description = "Digital Object Identifier (DOI) of the literature item." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifDatasetKey",
-            description = "GBIF dataset referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifDownloadKey",
-            description = "GBIF download referenced in publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifHigherTaxonKey",
-            description =
-                "All parent keys of any taxon that is the focus of the paper (see `gbifTaxonKey`)"
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Integer.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifNetworkKey",
-            description = "GBIF network referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifOccurrenceKey",
-            description = "Any GBIF occurrence keys directly mentioned in a paper." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Long.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifProjectIdentifier", // TODO
-            description = "GBIF dataset referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifProgrammeAcronym", // TODO
-            description = "GBIF dataset referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifTaxonKey",
-            description =
-                "Key(s) from the GBIF backbone of taxa that are the focus of a paper." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Integer.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "literatureType",
-            description = "Type of literature, e.g. journal article." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = LiteratureType.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "openAccess",
-            description = "Is the publication Open Access?",
-            schema = @Schema(implementation = Boolean.class),
-            in = ParameterIn.QUERY),
-        @Parameter(
-            name = "peerReview",
-            description = "Has the publication undergone peer review?",
-            schema = @Schema(implementation = Boolean.class),
-            in = ParameterIn.QUERY),
-        @Parameter(
-            name = "publisher",
-            description = "Publisher of journal." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "publishingOrganizationKey",
-            description = "Publisher whose dataset is referenced in publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = UUID.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "relevance",
-            description =
-                "Relevance to GBIF community, see [literature relevance](https://www.gbif.org/faq?question=literature-relevance)."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = LiteratureRelevance.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "source",
-            description = "Journal of publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "topics",
-            description = "Topic of publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = LiteratureTopic.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "year",
-            description =
-                "Year of publication.  This can be a single range such as "
-                    + "`2019,2021`, or can be repeated to search multiple years.",
-            schema = @Schema(implementation = Integer.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE)
-      })
+  @CommonSearchParameters
   @CommonParameters.HighlightParameter
-  @CommonParameters.QParameter
-  @Pageable.OffsetLimitParameters
   @FacetedSearchRequest.FacetParameters
   @ApiResponses(
       value = {
@@ -313,166 +328,16 @@ public class LiteratureResource {
   @Parameters(
       value = {
         @Parameter(
-            name = "citationType",
-            description =
-                "The manner in which GBIF is cited in a paper.\n\n"
-                    + "Make a [facet query](https://api.gbif.org/v1/literature/search?limit=0&facet=citationType) for available values."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "countriesOfCoverage",
-            description =
-                "Country or area of focus of study. Country codes are listed in our "
-                    + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Country.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "countriesOfResearcher",
-            description =
-                "Country or area of institution with which author is affiliated. Country codes are listed in our "
-                    + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Country.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "doi",
-            description = "Digital Object Identifier (DOI) of the literature item." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifDatasetKey",
-            description = "GBIF dataset referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifDownloadKey",
-            description = "GBIF download referenced in publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifHigherTaxonKey",
-            description =
-                "All parent keys of any taxon that is the focus of the paper (see `gbifTaxonKey`)"
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Integer.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifNetworkKey",
-            description = "GBIF network referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifOccurrenceKey",
-            description = "Any GBIF occurrence keys directly mentioned in a paper." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Long.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifProjectIdentifier", // TODO
-            description = "GBIF dataset referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifProgrammeAcronym", // TODO
-            description = "GBIF dataset referenced in publication." + REPEATED,
-            schema = @Schema(implementation = UUID.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "gbifTaxonKey",
-            description =
-                "Key(s) from the GBIF backbone of taxa that are the focus of a paper." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = Integer.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "literatureType",
-            description = "Type of literature, e.g. journal article." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = LiteratureType.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "openAccess",
-            description = "Is the publication Open Access?",
-            schema = @Schema(implementation = Boolean.class),
-            in = ParameterIn.QUERY),
-        @Parameter(
-            name = "peerReview",
-            description = "Has the publication undergone peer review?",
-            schema = @Schema(implementation = Boolean.class),
-            in = ParameterIn.QUERY),
-        @Parameter(
-            name = "publisher",
-            description = "Publisher of journal." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "publishingOrganizationKey",
-            description = "Publisher whose dataset is referenced in publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = UUID.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "relevance",
-            description =
-                "Relevance to GBIF community, see [literature relevance](https://www.gbif.org/faq?question=literature-relevance)."
-                    + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = LiteratureRelevance.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "source",
-            description = "Journal of publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = String.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "topics",
-            description = "Topic of publication." + REPEATED,
-            array = @ArraySchema(schema = @Schema(implementation = LiteratureTopic.class)),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE),
-        @Parameter(
-            name = "year",
-            description =
-                "Year of publication.  This can be a single range such as "
-                    + "`2019,2021`, or can be repeated to search multiple years.",
-            schema = @Schema(implementation = Integer.class),
-            in = ParameterIn.QUERY,
-            explode = Explode.TRUE)
+          name = "format",
+          description = "The format for the search results export. Defaults to `TSV`.",
+          in = ParameterIn.QUERY)
       })
-  @CommonParameters.HighlightParameter
-  @CommonParameters.QParameter
-  @Pageable.OffsetLimitParameters
-  @FacetedSearchRequest.FacetParameters
+  @CommonSearchParameters
   @ApiResponses(
       value = {
         @ApiResponse(
             responseCode = "200",
-            description = "Literature items found",
-            content = {
-              @Content(
-                  mediaType = "application/octet-stream",
-                  schema = @Schema(implementation = LiteratureSearchResult.class))
-            },
-            links = {
-              @Link(
-                  name = "Export",
-                  operationId = "export",
-                  parameters = {@LinkParameter(name = "uuid", expression = "$response.body#/id")})
-            }),
+            description = "Literature search results export."),
         @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
       })
   @GetMapping(value = "export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
