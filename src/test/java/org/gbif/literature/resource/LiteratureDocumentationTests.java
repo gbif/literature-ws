@@ -30,8 +30,13 @@ public class LiteratureDocumentationTests {
 
   @Test
   public void searchParametersDocumented() {
-    Set documentedParameters = Arrays.stream(LiteratureResource.CommonSearchParameters.class.getAnnotation(Parameters.class).value())
-      .map(p -> p.name()).collect(Collectors.toSet());
+    Set documentedParameters =
+        Arrays.stream(
+                LiteratureResource.CommonSearchParameters.class
+                    .getAnnotation(Parameters.class)
+                    .value())
+            .map(p -> p.name())
+            .collect(Collectors.toSet());
 
     LiteratureEsFieldMapper fieldMapper = new LiteratureEsFieldMapper();
 
