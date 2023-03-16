@@ -93,7 +93,7 @@ public class LiteratureResource {
   private static final String FILE_HEADER_PRE = "attachment; filename=literature_";
 
   // Page size to iterate over literature search export service
-  private static final int EXPORT_LIMIT = 5_000;
+  private static final int EXPORT_PAGE_LIMIT = 5_000;
 
   private final LiteratureSearchService searchService;
 
@@ -324,7 +324,7 @@ public class LiteratureResource {
 
   @Operation(
       summary = "Export literature search results",
-      description = "Exports the result of a literature search. Limited to " + EXPORT_LIMIT + " results.")
+      description = "Exports the result of a literature search.")
   @Parameters(
       value = {
         @Parameter(
@@ -353,7 +353,7 @@ public class LiteratureResource {
 
     try (Writer writer = new BufferedWriter(new OutputStreamWriter(response.getOutputStream()))) {
       CsvWriter.literatureSearchResultCsvWriter(
-              new LiteraturePager(searchService, searchRequest, EXPORT_LIMIT), format)
+              new LiteraturePager(searchService, searchRequest, EXPORT_PAGE_LIMIT), format)
           .export(writer);
     }
   }
