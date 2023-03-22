@@ -36,6 +36,7 @@ import org.supercsv.io.CsvBeanWriter;
 import org.supercsv.io.ICsvBeanWriter;
 import org.supercsv.io.dozer.CsvDozerBeanWriter;
 import org.supercsv.prefs.CsvPreference;
+import org.supercsv.quote.AlwaysQuoteMode;
 import org.supercsv.util.CsvContext;
 
 import com.fasterxml.jackson.databind.util.StdDateFormat;
@@ -66,9 +67,13 @@ public class CsvWriter<T> {
 
   private CsvPreference csvPreference() {
     if (ExportFormat.CSV == preference) {
-      return CsvPreference.STANDARD_PREFERENCE;
+      return new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE)
+          .useQuoteMode(new AlwaysQuoteMode())
+          .build();
     } else if (ExportFormat.TSV == preference) {
-      return CsvPreference.TAB_PREFERENCE;
+      return new CsvPreference.Builder(CsvPreference.TAB_PREFERENCE)
+          .useQuoteMode(new AlwaysQuoteMode())
+          .build();
     }
     throw new IllegalArgumentException("Export format not supported " + preference);
   }
