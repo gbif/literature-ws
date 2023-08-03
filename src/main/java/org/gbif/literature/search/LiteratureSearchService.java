@@ -13,6 +13,7 @@
  */
 package org.gbif.literature.search;
 
+import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
@@ -25,4 +26,7 @@ public interface LiteratureSearchService
         LiteratureSearchResult, LiteratureSearchParameter, LiteratureSearchRequest> {
 
   Optional<LiteratureSearchResult> get(Object identifier);
+
+  SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
+      LiteratureSearchRequest literatureSearchRequest);
 }

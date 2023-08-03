@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
+  private static final int BUFFER_LIMIT_BYTES_EXPORT = 140_000_000;
   private final RestHighLevelClient restHighLevelClient;
   private final LiteratureEsResponseParser esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
@@ -51,6 +53,11 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   @Override
   public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> search(
       LiteratureSearchRequest literatureSearchRequest) {
+    return searchInternal(literatureSearchRequest, RequestOptions.DEFAULT);
+  }
+
+  private SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> searchInternal(
+      LiteratureSearchRequest literatureSearchRequest, RequestOptions requestOptions) {
     int limit = literatureSearchRequest.getLimit();
     long offset = literatureSearchRequest.getOffset();
     boolean offsetExceeded = false;
@@ -65,8 +72,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
       SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
           esResponseParser.buildSearchResponse(
-              restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT),
-              literatureSearchRequest);
+              restHighLevelClient.search(searchRequest, requestOptions), literatureSearchRequest);
 
       if (offsetExceeded) {
         response.setOffset(offset);
@@ -87,5 +93,15 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
+      LiteratureSearchRequest literatureSearchRequest) {
+    RequestOptions.Builder builder = RequestOptions.DEFAULT.toBuilder();
+    builder.setHttpAsyncResponseConsumerFactory(
+        new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(
+            BUFFER_LIMIT_BYTES_EXPORT));
+    return searchInternal(literatureSearchRequest, builder.build());
   }
 }
