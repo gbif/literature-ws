@@ -41,7 +41,12 @@ public class LiteratureEsSearchRequestBuilder
       Set<String> values = params.get(LiteratureSearchParameter.DOI);
       if (values != null && !values.isEmpty()) {
         queryBuilder.must(
-            nestedQuery("identifiers", termsQuery("identifiers.doi", values.stream().map(String::toLowerCase).collect(Collectors.toSet())), ScoreMode.None));
+            nestedQuery(
+                "identifiers",
+                termsQuery(
+                    "identifiers.doi",
+                    values.stream().map(String::toLowerCase).collect(Collectors.toSet())),
+                ScoreMode.None));
       }
     }
   }
