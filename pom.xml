@@ -46,7 +46,7 @@
     <swagger-annotations.version>2.2.0</swagger-annotations.version>
     <super-csv.version>2.4.0</super-csv.version>
 
-    <gbif-api.version>1.2.0</gbif-api.version>
+    <gbif-api.version>1.12.8</gbif-api.version>
     <gbif-common-ws.version>1.22</gbif-common-ws.version>
 
     <spring-cloud-openfeign.version>2.2.6.RELEASE</spring-cloud-openfeign.version>
