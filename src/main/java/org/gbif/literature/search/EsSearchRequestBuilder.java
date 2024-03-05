@@ -52,7 +52,8 @@ import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.gbif.api.util.SearchTypeValidator.isRange;
+import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
+import static org.gbif.api.util.SearchTypeValidator.isDateRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
@@ -312,7 +313,7 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
     // collect queries for each value
     List<String> parsedValues = new ArrayList<>();
     for (String value : values) {
-      if (isRange(value)) {
+      if (isNumericRange(value) || isDateRange(value)) {
         queries.add(buildRangeQuery(esField, value));
         continue;
       }
