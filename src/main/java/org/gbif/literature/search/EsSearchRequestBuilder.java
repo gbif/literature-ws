@@ -46,6 +46,8 @@ import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 
+import org.gbif.api.vocabulary.Language;
+
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
@@ -371,6 +373,10 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
             .map(Enum::name)
             .map(String::toLowerCase)
             .orElse(value);
+      } else if (Language.class.isAssignableFrom(parameter.type())){
+        return VocabularyUtils.lookup(value, Language.class)
+          .map(Language::getIso3LetterCode)
+          .orElse(value);
       } else {
         return VocabularyUtils.lookup(value, (Class<Enum<?>>) parameter.type())
             .map(Enum::name)
@@ -381,11 +387,12 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
     if (Boolean.class.isAssignableFrom(parameter.type())) {
       return value.toLowerCase();
     }
+
     return value;
   }
 
   GroupedParams<P> groupParameters(FacetedSearchRequest<P> searchRequest) {
-    GroupedParams<P> groupedParams = new GroupedParams<P>();
+    GroupedParams<P> groupedParams = new GroupedParams<>();
 
     if (!searchRequest.isMultiSelectFacets()
         || searchRequest.getFacets() == null
