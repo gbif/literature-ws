@@ -254,7 +254,7 @@ public class LiteratureResource {
         @Parameter(
           name = "language",
           description =
-            "Language of study. Language codes are listed in our "
+            "Language of publication. Language codes are listed in our "
               + "[Language enum](https://api.gbif.org/v1/enumeration/language)." + REPEATED,
           schema = @Schema(implementation = Language.class),
           in = ParameterIn.QUERY,
