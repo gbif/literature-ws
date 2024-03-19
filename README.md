@@ -33,6 +33,7 @@ http://api.gbif.org/v1/literature/search
 | doi                       | String                                                                                                     | Digital Object Identifier (DOI)                                                         |
 | source                    | String                                                                                                     | Journal of publication                                                                  |
 | publisher                 | String                                                                                                     | Publisher of journal                                                                    |
+| language                  | [Language](https://api.gbif.org/v1/enumeration/language)                                                   | Language of publication                                                                 |
 
 
 ## Find by id

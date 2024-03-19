@@ -25,6 +25,7 @@ import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.Language;
 import org.gbif.literature.export.CsvWriter;
 import org.gbif.literature.export.LiteraturePager;
 import org.gbif.literature.search.LiteratureSearchService;
@@ -249,7 +250,15 @@ public class LiteratureResource {
                     + "`2019,2021`, or can be repeated to search multiple years.",
             schema = @Schema(implementation = Integer.class),
             in = ParameterIn.QUERY,
-            explode = Explode.TRUE)
+            explode = Explode.TRUE),
+        @Parameter(
+          name = "language",
+          description =
+            "Language of publication. Language codes are listed in our "
+              + "[Language enum](https://api.gbif.org/v1/enumeration/language)." + REPEATED,
+          schema = @Schema(implementation = Language.class),
+          in = ParameterIn.QUERY,
+          explode = Explode.TRUE)
       })
   @CommonParameters.QParameter
   @interface CommonSearchParameters {}
