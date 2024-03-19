@@ -19,6 +19,7 @@ import org.gbif.api.model.common.search.SearchParameter;
 import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.Language;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,16 +47,14 @@ import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 
-import org.gbif.api.vocabulary.Language;
-
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 import static org.gbif.api.util.SearchTypeValidator.isDateRange;
+import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
@@ -373,10 +372,10 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
             .map(Enum::name)
             .map(String::toLowerCase)
             .orElse(value);
-      } else if (Language.class.isAssignableFrom(parameter.type())){
+      } else if (Language.class.isAssignableFrom(parameter.type())) {
         return VocabularyUtils.lookup(value, Language.class)
-          .map(Language::getIso3LetterCode)
-          .orElse(value);
+            .map(Language::getIso3LetterCode)
+            .orElse(value);
       } else {
         return VocabularyUtils.lookup(value, (Class<Enum<?>>) parameter.type())
             .map(Enum::name)
