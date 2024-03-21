@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
-  private static final int BUFFER_LIMIT_BYTES_EXPORT = 140_000_000;
+  private static final int BUFFER_LIMIT_BYTES_EXPORT = 170_000_000;
   private final RestHighLevelClient restHighLevelClient;
   private final LiteratureEsResponseParser esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
