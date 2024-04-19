@@ -314,7 +314,7 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
     // collect queries for each value
     List<String> parsedValues = new ArrayList<>();
     for (String value : values) {
-      if (isNumericRange(value) || isDateRange(value)) {
+      if (isNumericRange(value) || (esFieldMapper.isDateField(esField) && isDateRange(value))) {
         queries.add(buildRangeQuery(esField, value));
         continue;
       }
