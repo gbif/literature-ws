@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.gbif</groupId>
     <artifactId>motherpom</artifactId>
-    <version>56</version>
+    <version>58-SNAPSHOT</version>
   </parent>
 
   <groupId>org.gbif.literature</groupId>
@@ -39,23 +39,26 @@
   </repositories>
 
   <properties>
-    <spring-boot.version>2.3.7.RELEASE</spring-boot.version>
-    <spring-boot-admin.version>2.2.4</spring-boot-admin.version>
+    <java.version>17</java.version>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <spring-boot.version>3.2.5</spring-boot.version>
+    <spring-boot-admin.version>2.3.0</spring-boot-admin.version>
     <start-class>org.gbif.literature.LiteratureApplication</start-class>
-    <springdoc-openapi-ui.version>1.5.8</springdoc-openapi-ui.version>
+    <springdoc-openapi-ui.version>1.8.0</springdoc-openapi-ui.version>
     <swagger-annotations.version>2.2.0</swagger-annotations.version>
     <super-csv.version>2.4.0</super-csv.version>
 
     <gbif-api.version>1.15.0</gbif-api.version>
     <gbif-common-ws.version>1.27</gbif-common-ws.version>
 
-    <spring-cloud-openfeign.version>2.2.6.RELEASE</spring-cloud-openfeign.version>
-    <spring-cloud-zookeeper.version>2.2.4.RELEASE</spring-cloud-zookeeper.version>
-    <zookeeper.version>3.4.14</zookeeper.version>
+    <spring-cloud-openfeign.version>4.1.1</spring-cloud-openfeign.version>
+    <spring-cloud-zookeeper.version>4.0.1</spring-cloud-zookeeper.version>
+    <zookeeper.version>3.9.1</zookeeper.version>
     <elasticsearch.version>7.9.1</elasticsearch.version>
-    <guava.version>17.0</guava.version>
-    <logback.version>1.2.3</logback.version>
-    <logstash-logback-encoder.version>4.11</logstash-logback-encoder.version>
+    <guava.version>20.0</guava.version>
+    <logback.version>1.5.0</logback.version>
+    <logstash-logback-encoder.version>7.3</logstash-logback-encoder.version>
 
     <spring-boot-maven-plugin.version>${spring-boot.version}</spring-boot-maven-plugin.version>
     <springdoc-openapi-maven-plugin.version>1.1</springdoc-openapi-maven-plugin.version>
@@ -87,6 +90,11 @@
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations</artifactId>
       <version>${swagger-annotations.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-bootstrap</artifactId>
+      <version>3.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.cloud</groupId>
@@ -238,6 +246,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.5.0</version>
         <executions>
           <execution>
             <id>reserve-http-port</id>

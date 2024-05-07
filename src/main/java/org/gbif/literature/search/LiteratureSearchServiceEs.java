@@ -13,6 +13,8 @@
  */
 package org.gbif.literature.search;
 
+
+
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
@@ -32,7 +34,7 @@ import org.springframework.stereotype.Service;
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
   private static final int BUFFER_LIMIT_BYTES_EXPORT = 170_000_000;
-  private final RestHighLevelClient restHighLevelClient;
+  private final RestHighLevelClient restHighLevelClient; //Its deprecated should I change?
   private final LiteratureEsResponseParser esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
   private final String index;

@@ -1,6 +1,8 @@
 spring:
   application:
     name: literature-ws
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
 elasticsearch:
   hosts: http://cms-search.gbif-dev.org:9200/
   index: literature
