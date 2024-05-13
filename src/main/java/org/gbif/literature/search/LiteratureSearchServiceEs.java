@@ -34,6 +34,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
   @Value("${literature.bufferLimitBytesExport}")
   private int bufferLimitBytesExport;
+
   private final RestHighLevelClient restHighLevelClient;
   private final LiteratureEsResponseParser esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
@@ -103,7 +104,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
     RequestOptions.Builder builder = RequestOptions.DEFAULT.toBuilder();
     builder.setHttpAsyncResponseConsumerFactory(
         new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(
-          bufferLimitBytesExport));
+            bufferLimitBytesExport));
     return searchInternal(literatureSearchRequest, builder.build());
   }
 }
