@@ -8,3 +8,5 @@ elasticsearch:
   socketTimeOut: 60000
   connectionRequestTimeOut: 120000
   maxResultWindow: 20000
+literature:
+  bufferLimitBytesExport: 200000000
