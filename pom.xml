@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.gbif</groupId>
     <artifactId>motherpom</artifactId>
-    <version>56</version>
+    <version>58-SNAPSHOT</version>
   </parent>
 
   <groupId>org.gbif.literature</groupId>
@@ -39,26 +39,31 @@
   </repositories>
 
   <properties>
-    <spring-boot.version>2.3.7.RELEASE</spring-boot.version>
-    <spring-boot-admin.version>2.2.4</spring-boot-admin.version>
+    <spring-boot.version>3.2.5</spring-boot.version>
+    <spring-boot-admin.version>3.2.3</spring-boot-admin.version>
     <start-class>org.gbif.literature.LiteratureApplication</start-class>
-    <springdoc-openapi-ui.version>1.5.8</springdoc-openapi-ui.version>
+    <springdoc-openapi-ui.version>1.8.0</springdoc-openapi-ui.version>
     <swagger-annotations.version>2.2.0</swagger-annotations.version>
     <super-csv.version>2.4.0</super-csv.version>
-
+    <zookeeper.version>3.8.1</zookeeper.version>
+    <curator.version>5.5.0</curator.version>
     <gbif-api.version>1.16.1</gbif-api.version>
-    <gbif-common-ws.version>1.27</gbif-common-ws.version>
+    <gbif-common-ws.version>1.28-SNAPSHOT</gbif-common-ws.version>
 
-    <spring-cloud-openfeign.version>2.2.6.RELEASE</spring-cloud-openfeign.version>
-    <spring-cloud-zookeeper.version>2.2.4.RELEASE</spring-cloud-zookeeper.version>
-    <zookeeper.version>3.4.14</zookeeper.version>
+    <spring-cloud-openfeign.version>4.1.1</spring-cloud-openfeign.version>
+    <spring-cloud-zookeeper.version>4.1.1</spring-cloud-zookeeper.version>
+    <scala.version>2.11.8</scala.version>
     <elasticsearch.version>7.9.1</elasticsearch.version>
     <guava.version>17.0</guava.version>
-    <logback.version>1.2.3</logback.version>
-    <logstash-logback-encoder.version>4.11</logstash-logback-encoder.version>
+    <logback.version>1.4.14</logback.version>
+    <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+
+    <junit.version>5.10.2</junit.version>
+    <mockito.version>3.12.4</mockito.version>
 
     <spring-boot-maven-plugin.version>${spring-boot.version}</spring-boot-maven-plugin.version>
-    <springdoc-openapi-maven-plugin.version>1.1</springdoc-openapi-maven-plugin.version>
+    <springdoc-openapi-maven-plugin.version>1.4</springdoc-openapi-maven-plugin.version>
+    <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
   </properties>
 
   <dependencyManagement>
@@ -90,7 +95,7 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
+      <artifactId>spring-cloud-starter-zookeeper-all</artifactId>
       <version>${spring-cloud-zookeeper.version}</version>
       <exclusions>
         <exclusion>
@@ -113,11 +118,15 @@
           <groupId>org.springframework.cloud</groupId>
           <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </exclusion>
+        <exclusion>
+          <artifactId>spring-cloud-starter-zookeeper-config</artifactId>
+          <groupId>org.springframework.cloud</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-zookeeper-config</artifactId>
+      <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
       <version>${spring-cloud-zookeeper.version}</version>
     </dependency>
     <dependency>
@@ -231,6 +240,36 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -238,6 +277,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${build-helper-maven-plugin.version}</version>
         <executions>
           <execution>
             <id>reserve-http-port</id>
