@@ -55,10 +55,8 @@
     <scala.version>2.11.8</scala.version>
     <elasticsearch.version>7.9.1</elasticsearch.version>
     <guava.version>17.0</guava.version>
-    <slf4j.version>1.7.30</slf4j.version>
     <logback.version>1.2.3</logback.version>
-    <logstash-encoder.version>6.6</logstash-encoder.version>
-    <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+    <logstash-logback-encoder.version>4.11</logstash-logback-encoder.version>
 
     <spring-boot-maven-plugin.version>${spring-boot.version}</spring-boot-maven-plugin.version>
     <springdoc-openapi-maven-plugin.version>1.4</springdoc-openapi-maven-plugin.version>
