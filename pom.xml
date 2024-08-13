@@ -47,7 +47,7 @@
     <super-csv.version>2.4.0</super-csv.version>
     <zookeeper.version>3.8.1</zookeeper.version>
     <curator.version>5.5.0</curator.version>
-    <gbif-api.version>1.16.4-SNAPSHOT</gbif-api.version>
+    <gbif-api.version>1.17.0-SNAPSHOT</gbif-api.version>
     <gbif-common-ws.version>1.28-SNAPSHOT</gbif-common-ws.version>
 
     <spring-cloud-zookeeper.version>2.2.5.RELEASE</spring-cloud-zookeeper.version>

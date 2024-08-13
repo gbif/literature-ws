@@ -64,6 +64,10 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put(LiteratureSearchParameter.GBIF_PROJECT_IDENTIFIER, "gbifProjectIdentifier")
           .put(LiteratureSearchParameter.GBIF_PROGRAMME, "gbifProgrammeAcronym")
           .put(LiteratureSearchParameter.LANGUAGE, "language")
+          .put(LiteratureSearchParameter.ADDED, "created")
+          .put(LiteratureSearchParameter.PUBLISHED, "createdAt")
+          .put(LiteratureSearchParameter.DISCOVERED, "accessed")
+          .put(LiteratureSearchParameter.MODIFIED, "updatedAt")
           .build();
 
   public static final Map<String, Integer> CARDINALITIES =
@@ -79,7 +83,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   private static final String[] EXCLUDE_FIELDS = new String[] {"all"};
 
   public static final List<String> DATE_FIELDS =
-      ImmutableList.of("created", "createdAt", "updatedAt");
+      ImmutableList.of("created", "createdAt", "updatedAt", "accessed");
 
   @Override
   public String get(LiteratureSearchParameter searchParameter) {
