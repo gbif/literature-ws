@@ -13,10 +13,13 @@
  */
 package org.gbif.literature.resource;
 
+import io.swagger.v3.oas.annotations.Parameter;
+
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.literature.search.LiteratureEsFieldMapper;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,18 +33,29 @@ public class LiteratureDocumentationTests {
 
   @Test
   public void searchParametersDocumented() {
-    Set documentedParameters =
+
+    Set<LiteratureSearchParameter> handledParams = new HashSet<>(
+      Arrays.asList(
+        LiteratureSearchParameter.DOI,
+        LiteratureSearchParameter.ADDED,
+        LiteratureSearchParameter.PUBLISHED,
+        LiteratureSearchParameter.DISCOVERED,
+        LiteratureSearchParameter.MODIFIED
+      )
+    );
+
+    Set<String> documentedParameters =
         Arrays.stream(
                 LiteratureResource.CommonSearchParameters.class
                     .getAnnotation(Parameters.class)
                     .value())
-            .map(p -> p.name())
+            .map(Parameter::name)
             .collect(Collectors.toSet());
 
     LiteratureEsFieldMapper fieldMapper = new LiteratureEsFieldMapper();
 
     for (LiteratureSearchParameter param : LiteratureSearchParameter.values()) {
-      if (param == LiteratureSearchParameter.DOI) {
+      if (handledParams.contains(param)) {
         continue; // Handled specially.
       }
       String name = fieldMapper.get(param);
