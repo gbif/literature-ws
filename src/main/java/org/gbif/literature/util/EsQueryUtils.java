@@ -43,7 +43,7 @@ public final class EsQueryUtils {
   public static final String RANGE_SEPARATOR = ",";
   public static final String RANGE_WILDCARD = "*";
 
-  public static final String REGEX_PUNCT_CHARS = "(\\p{Punct})";
+  public static final String REGEX_PUNCT_CHARS = "([+\\-!(){}\\[\\]^\"~*?:\\\\/])";
 
   private static final DateTimeFormatter FORMATTER =
       DateTimeFormatter.ofPattern(
