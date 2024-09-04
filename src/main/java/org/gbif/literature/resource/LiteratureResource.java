@@ -245,6 +245,12 @@ public class LiteratureResource {
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
+          name = "websites",
+          description = "Website of publication" + REPEATED,
+          array = @ArraySchema(schema = @Schema(implementation = String.class)),
+          in = ParameterIn.QUERY,
+          explode = Explode.TRUE),
+        @Parameter(
             name = "year",
             description =
                 "Year of publication.  This can be a single range such as "
