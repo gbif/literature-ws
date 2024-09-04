@@ -48,6 +48,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put(LiteratureSearchParameter.LITERATURE_TYPE, "literatureType")
           .put(LiteratureSearchParameter.RELEVANCE, "relevance")
           .put(LiteratureSearchParameter.YEAR, "year")
+          .put(LiteratureSearchParameter.WEBSITES, "websites")
           .put(LiteratureSearchParameter.TOPICS, "topics")
           .put(LiteratureSearchParameter.GBIF_DATASET_KEY, "gbifDatasetKey")
           .put(LiteratureSearchParameter.PUBLISHING_ORGANIZATION_KEY, "publishingOrganizationKey")
