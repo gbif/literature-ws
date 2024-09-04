@@ -13,6 +13,8 @@
  */
 package org.gbif.literature.resource;
 
+import org.elasticsearch.client.RestHighLevelClient;
+
 import org.gbif.api.documentation.CommonParameters;
 import org.gbif.api.model.common.export.ExportFormat;
 import org.gbif.api.model.common.paging.Pageable;
@@ -26,8 +28,10 @@ import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.Language;
+import org.gbif.literature.config.EsClientConfigProperties;
 import org.gbif.literature.export.CsvWriter;
 import org.gbif.literature.export.LiteraturePager;
+import org.gbif.literature.search.LiteratureEsResponseParser;
 import org.gbif.literature.search.LiteratureSearchService;
 
 import java.io.BufferedWriter;
@@ -98,9 +102,17 @@ public class LiteratureResource {
   private static final int EXPORT_PAGE_LIMIT = 5_000;
 
   private final LiteratureSearchService searchService;
+  private final RestHighLevelClient client;
+  private final LiteratureEsResponseParser esResponseParser;
+  private final EsClientConfigProperties esClientConfigProperties;
 
-  public LiteratureResource(LiteratureSearchService searchService) {
+  public LiteratureResource(LiteratureSearchService searchService, RestHighLevelClient client,
+    LiteratureEsResponseParser esResponseParser,
+    EsClientConfigProperties esClientConfigProperties) {
     this.searchService = searchService;
+    this.client = client;
+    this.esResponseParser = esResponseParser;
+    this.esClientConfigProperties = esClientConfigProperties;
   }
 
   private static final String REPEATED =
@@ -388,8 +400,9 @@ public class LiteratureResource {
         FILE_HEADER_PRE + System.currentTimeMillis() + '.' + format.name().toLowerCase());
 
     try (Writer writer = new BufferedWriter(new OutputStreamWriter(response.getOutputStream()))) {
+      LiteraturePager pager = new LiteraturePager(esClientConfigProperties,searchService, searchRequest, client, esResponseParser);
       CsvWriter.literatureSearchResultCsvWriter(
-              new LiteraturePager(searchService, searchRequest, EXPORT_PAGE_LIMIT), format)
+              pager, format, EXPORT_PAGE_LIMIT)
           .export(writer);
     }
   }

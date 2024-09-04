@@ -13,6 +13,8 @@
  */
 package org.gbif.literature.search;
 
+import org.elasticsearch.index.query.ZeroTermsQueryOption;
+
 import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
@@ -25,7 +27,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.search.MatchQuery;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -173,7 +174,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
                 .fuzziness("AUTO")
                 .prefixLength(3)
                 .lenient(true)
-                .zeroTermsQuery(MatchQuery.ZeroTermsQuery.ALL));
+                .zeroTermsQuery(ZeroTermsQueryOption.ALL));
 
     return boolQueryBuilder;
   }

@@ -43,6 +43,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.builder.PointInTimeBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -85,15 +86,23 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
   }
 
   public SearchRequest buildSearchRequest(
-      FacetedSearchRequest<P> searchRequest, boolean facetsEnabled, String index) {
+      FacetedSearchRequest<P> searchRequest, boolean facetsEnabled, String index, List<Object> searchAfter, String pitId) {
 
     SearchRequest esSearchRequest = new SearchRequest();
-    esSearchRequest.indices(index);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.trackTotalHits(true);
-    esSearchRequest.source(searchSourceBuilder);
+
     searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
+    if (searchAfter != null && !searchAfter.isEmpty()) {
+      searchSourceBuilder.searchAfter(searchAfter.toArray());
+    }
+
+    if (pitId != null) {
+      searchSourceBuilder.pointInTimeBuilder(new PointInTimeBuilder(pitId));
+    } else {
+      esSearchRequest.indices(index);
+    }
 
     // size and offset
     searchSourceBuilder.size(searchRequest.getLimit());
@@ -129,6 +138,7 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
 
     // post-filter
     buildPostFilter(groupedParams.postFilterParams).ifPresent(searchSourceBuilder::postFilter);
+    esSearchRequest.source(searchSourceBuilder);
 
     return esSearchRequest;
   }

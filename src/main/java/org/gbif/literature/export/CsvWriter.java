@@ -14,6 +14,7 @@
 package org.gbif.literature.export;
 
 import org.gbif.api.model.common.export.ExportFormat;
+import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
@@ -58,9 +59,11 @@ public class CsvWriter<T> {
 
   private final CellProcessor[] processors;
 
-  private final Iterable<T> pager;
+  private final LiteraturePager pager;
 
   private final ExportFormat preference;
+
+  private final int exportPageLimit;
 
   // Use dozer if set to true.
   private Class<?> forClass;
@@ -91,8 +94,14 @@ public class CsvWriter<T> {
   private void exportUsingBeanWriter(Writer writer) {
     try (ICsvBeanWriter beanWriter = new CsvBeanWriter(writer, csvPreference())) {
       beanWriter.writeHeader(header);
-      for (T o : pager) {
-        beanWriter.write(o, fields, processors);
+      while (true) {
+        PagingResponse<LiteratureSearchResult> response = pager.nextPage(exportPageLimit);
+        for (LiteratureSearchResult result : response.getResults()) {
+          beanWriter.write(result, fields, processors);
+        }
+        if (response.isEndOfRecords() || response.getResults().isEmpty()) {
+          break;
+        }
       }
     }
   }
@@ -102,15 +111,21 @@ public class CsvWriter<T> {
     try (CsvDozerBeanWriter beanWriter = new CsvDozerBeanWriter(writer, csvPreference())) {
       beanWriter.writeHeader(header);
       beanWriter.configureBeanMapping(forClass, fields);
-      for (T o : pager) {
-        beanWriter.write(o, processors);
+      while (true) {
+        PagingResponse<LiteratureSearchResult> response = pager.nextPage(exportPageLimit);
+        for (LiteratureSearchResult result : response.getResults()) {
+          beanWriter.write(result, processors);
+        }
+        if (response.isEndOfRecords() || response.getResults().isEmpty()) {
+          break;
+        }
       }
     }
   }
 
   /** Creates an CsvWriter/exporter of DatasetSearchResult. */
   public static CsvWriter<LiteratureSearchResult> literatureSearchResultCsvWriter(
-      Iterable<LiteratureSearchResult> pager, ExportFormat preference) {
+      LiteraturePager pager, ExportFormat preference, int exportPageLimit) {
     return CsvWriter.<LiteratureSearchResult>builder()
         .fields(
             new String[] {
@@ -179,7 +194,8 @@ public class CsvWriter<T> {
               new Optional(new ListStringProcessor()) // gbifDownloadKey
             })
         .preference(preference)
-        .pager(pager)
+      .pager(pager)
+      .exportPageLimit(exportPageLimit)
         .build();
   }
 

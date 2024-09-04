@@ -13,7 +13,12 @@
  */
 package org.gbif.literature.search;
 
-import org.gbif.api.model.common.search.SearchResponse;
+import java.io.IOException;
+
+import java.util.List;
+
+import org.elasticsearch.action.search.SearchResponse;
+
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
@@ -27,6 +32,8 @@ public interface LiteratureSearchService
 
   Optional<LiteratureSearchResult> get(Object identifier);
 
-  SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
-      LiteratureSearchRequest literatureSearchRequest);
+  SearchResponse exportSearch(
+    LiteratureSearchRequest literatureSearchRequest,List<Object> searchAfter, String pitId )
+    throws IOException;
+
 }

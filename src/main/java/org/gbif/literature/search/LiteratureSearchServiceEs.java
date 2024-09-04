@@ -13,6 +13,8 @@
  */
 package org.gbif.literature.search;
 
+import java.util.List;
+
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
@@ -23,17 +25,13 @@ import java.io.IOException;
 import java.util.Optional;
 
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
-  @Value("${literature.bufferLimitBytesExport}")
-  private int bufferLimitBytesExport;
 
   private final RestHighLevelClient restHighLevelClient;
   private final LiteratureEsResponseParser esResponseParser;
@@ -56,11 +54,11 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   @Override
   public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> search(
       LiteratureSearchRequest literatureSearchRequest) {
-    return searchInternal(literatureSearchRequest, RequestOptions.DEFAULT);
+    return searchInternal(literatureSearchRequest);
   }
 
   private SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> searchInternal(
-      LiteratureSearchRequest literatureSearchRequest, RequestOptions requestOptions) {
+      LiteratureSearchRequest literatureSearchRequest) {
     int limit = literatureSearchRequest.getLimit();
     long offset = literatureSearchRequest.getOffset();
     boolean offsetExceeded = false;
@@ -72,10 +70,10 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
     try {
       SearchRequest searchRequest =
-          esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
+          esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index,null, null);
       SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
           esResponseParser.buildSearchResponse(
-              restHighLevelClient.search(searchRequest, requestOptions), literatureSearchRequest);
+              restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT), literatureSearchRequest);
 
       if (offsetExceeded) {
         response.setOffset(offset);
@@ -99,12 +97,18 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   }
 
   @Override
-  public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
-      LiteratureSearchRequest literatureSearchRequest) {
-    RequestOptions.Builder builder = RequestOptions.DEFAULT.toBuilder();
-    builder.setHttpAsyncResponseConsumerFactory(
-        new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(
-            bufferLimitBytesExport));
-    return searchInternal(literatureSearchRequest, builder.build());
+  public org.elasticsearch.action.search.SearchResponse exportSearch(
+      LiteratureSearchRequest searchRequest,List<Object> searchAfterValues, String pitId )
+    throws IOException {
+    return searchToExport(searchRequest, searchAfterValues, pitId);
   }
+
+  private org.elasticsearch.action.search.SearchResponse searchToExport(
+    LiteratureSearchRequest literatureSearchRequest, List<Object> searchAfterValues, String pitId) throws IOException {
+
+    SearchRequest searchRequest =
+      esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index, searchAfterValues, pitId);
+    return restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+  }
+
 }
