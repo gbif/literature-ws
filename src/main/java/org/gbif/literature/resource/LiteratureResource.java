@@ -245,11 +245,11 @@ public class LiteratureResource {
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
-          name = "websites",
-          description = "Website of publication" + REPEATED,
-          array = @ArraySchema(schema = @Schema(implementation = String.class)),
-          in = ParameterIn.QUERY,
-          explode = Explode.TRUE),
+            name = "websites",
+            description = "Website of publication" + REPEATED,
+            array = @ArraySchema(schema = @Schema(implementation = String.class)),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
         @Parameter(
             name = "year",
             description =
@@ -268,33 +268,33 @@ public class LiteratureResource {
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
-          name = "added",
-          description =
-            "Date or date range when the publication was added. Format is ISO 8601, e.g., '2024-07-14' or '2024-07-14,2024-08-14'.",
-          schema = @Schema(implementation = Date.class),
-          in = ParameterIn.QUERY,
-          explode = Explode.TRUE),
+            name = "added",
+            description =
+                "Date or date range when the publication was added. Format is ISO 8601, e.g., '2024-07-14' or '2024-07-14,2024-08-14'.",
+            schema = @Schema(implementation = Date.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
         @Parameter(
-          name = "published",
-          description =
-            "Date or date range when the publication was published. Format is ISO 8601, e.g., '2024-02-22' or '2024-02-22,2024-03-22'.",
-          schema = @Schema(implementation = Date.class),
-          in = ParameterIn.QUERY,
-          explode = Explode.TRUE),
+            name = "published",
+            description =
+                "Date or date range when the publication was published. Format is ISO 8601, e.g., '2024-02-22' or '2024-02-22,2024-03-22'.",
+            schema = @Schema(implementation = Date.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
         @Parameter(
-          name = "discovered",
-          description =
-            "Date or date range when the publication was discovered. Format is ISO 8601, e.g., '2024-02-26' or '2024-02-26,2024-03-26'.",
-          schema = @Schema(implementation = Date.class),
-          in = ParameterIn.QUERY,
-          explode = Explode.TRUE),
+            name = "discovered",
+            description =
+                "Date or date range when the publication was discovered. Format is ISO 8601, e.g., '2024-02-26' or '2024-02-26,2024-03-26'.",
+            schema = @Schema(implementation = Date.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
         @Parameter(
-          name = "modified",
-          description =
-            "Date or date range when the publication was discovered. Format is ISO 8601, e.g., '2024-07-26' or '2024-07-26,2024-10-26'.",
-          schema = @Schema(implementation = Date.class),
-          in = ParameterIn.QUERY,
-          explode = Explode.TRUE)
+            name = "modified",
+            description =
+                "Date or date range when the publication was discovered. Format is ISO 8601, e.g., '2024-07-26' or '2024-07-26,2024-10-26'.",
+            schema = @Schema(implementation = Date.class),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE)
       })
   @CommonParameters.QParameter
   @interface CommonSearchParameters {}
