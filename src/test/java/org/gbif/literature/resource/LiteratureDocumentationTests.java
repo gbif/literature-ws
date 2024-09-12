@@ -33,14 +33,15 @@ public class LiteratureDocumentationTests {
   @Test
   public void searchParametersDocumented() {
 
-    Set<LiteratureSearchParameter> handledParams =
-        new HashSet<>(
-            Arrays.asList(
-                LiteratureSearchParameter.DOI,
-                LiteratureSearchParameter.ADDED,
-                LiteratureSearchParameter.PUBLISHED,
-                LiteratureSearchParameter.DISCOVERED,
-                LiteratureSearchParameter.MODIFIED));
+    Set<LiteratureSearchParameter> handledParams = new HashSet<>(
+      Arrays.asList(
+        LiteratureSearchParameter.DOI,
+        LiteratureSearchParameter.ADDED,
+        LiteratureSearchParameter.PUBLISHED,
+        LiteratureSearchParameter.DISCOVERED,
+        LiteratureSearchParameter.MODIFIED
+      )
+    );
 
     Set<String> documentedParameters =
         Arrays.stream(

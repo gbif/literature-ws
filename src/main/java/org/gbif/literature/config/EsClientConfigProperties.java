@@ -18,62 +18,16 @@ import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import lombok.Data;
+
 @Component
 @ConfigurationProperties(prefix = "elasticsearch")
+@Data
 public class EsClientConfigProperties {
-
   private Set<String> hosts;
   private String index;
   private int connectionTimeOut;
   private int socketTimeOut;
   private int connectionRequestTimeOut;
   private int maxResultWindow;
-
-  public Set<String> getHosts() {
-    return hosts;
-  }
-
-  public void setHosts(Set<String> hosts) {
-    this.hosts = hosts;
-  }
-
-  public String getIndex() {
-    return index;
-  }
-
-  public void setIndex(String index) {
-    this.index = index;
-  }
-
-  public int getConnectionTimeOut() {
-    return connectionTimeOut;
-  }
-
-  public void setConnectionTimeOut(int connectionTimeOut) {
-    this.connectionTimeOut = connectionTimeOut;
-  }
-
-  public int getSocketTimeOut() {
-    return socketTimeOut;
-  }
-
-  public void setSocketTimeOut(int socketTimeOut) {
-    this.socketTimeOut = socketTimeOut;
-  }
-
-  public int getConnectionRequestTimeOut() {
-    return connectionRequestTimeOut;
-  }
-
-  public void setConnectionRequestTimeOut(int connectionRequestTimeOut) {
-    this.connectionRequestTimeOut = connectionRequestTimeOut;
-  }
-
-  public int getMaxResultWindow() {
-    return maxResultWindow;
-  }
-
-  public void setMaxResultWindow(int maxResultWindow) {
-    this.maxResultWindow = maxResultWindow;
-  }
 }
