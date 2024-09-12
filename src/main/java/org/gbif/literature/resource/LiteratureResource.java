@@ -13,8 +13,6 @@
  */
 package org.gbif.literature.resource;
 
-import java.util.Date;
-
 import org.gbif.api.documentation.CommonParameters;
 import org.gbif.api.model.common.export.ExportFormat;
 import org.gbif.api.model.common.paging.Pageable;
@@ -40,7 +38,10 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Date;
 import java.util.UUID;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -67,7 +68,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import javax.servlet.http.HttpServletResponse;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.METHOD;

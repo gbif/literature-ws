@@ -13,8 +13,6 @@
  */
 package org.gbif.literature.resource;
 
-import io.swagger.v3.oas.annotations.Parameter;
-
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.literature.search.LiteratureEsFieldMapper;
 
@@ -25,6 +23,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 
 import static org.springframework.test.util.AssertionErrors.assertTrue;

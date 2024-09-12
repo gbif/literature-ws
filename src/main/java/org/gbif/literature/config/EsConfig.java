@@ -20,16 +20,39 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.NodeSelector;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.support.DefaultSingletonBeanRegistry;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Configuration
+@Slf4j
 public class EsConfig {
 
-  @Bean
+  @Autowired
+  private ApplicationContext applicationContext;
+
+  /**
+   * Re-creates the instance of the RestHighLevelClient.
+   */
+  public RestHighLevelClient reCreateRestHighLevelClient() {
+    RestHighLevelClient restHighLevelClient = applicationContext.getBean("restHighLevelClient", RestHighLevelClient.class);
+    if (!restHighLevelClient.getLowLevelClient().isRunning()) {
+      log.warn("Recreating Elasticsearch RestHighLevelClient");
+      DefaultSingletonBeanRegistry registry = (DefaultSingletonBeanRegistry) applicationContext.getAutowireCapableBeanFactory();
+      registry.destroySingleton("restHighLevelClient");
+      registry.registerSingleton("restHighLevelClient", reCreateRestHighLevelClient(applicationContext.getBean(EsClientConfigProperties.class)));
+    }
+    return restHighLevelClient;
+  }
+
+  @Bean("restHighLevelClient")
   @Primary
-  public RestHighLevelClient restHighLevelClient(EsClientConfigProperties esProperties) {
+  public RestHighLevelClient reCreateRestHighLevelClient(EsClientConfigProperties esProperties) {
     return provideEsClient(esProperties);
   }
 

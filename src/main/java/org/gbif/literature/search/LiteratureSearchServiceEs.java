@@ -18,6 +18,7 @@ import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.literature.config.EsClientConfigProperties;
+import org.gbif.literature.config.EsConfig;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -35,22 +36,33 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   @Value("${literature.bufferLimitBytesExport}")
   private int bufferLimitBytesExport;
 
-  private final RestHighLevelClient restHighLevelClient;
+  private RestHighLevelClient restHighLevelClient;
   private final LiteratureEsResponseParser esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
   private final String index;
   private final int maxResultWindow;
 
+  private final EsConfig esConfig;
+
   public LiteratureSearchServiceEs(
       EsClientConfigProperties esClientConfigProperties,
       RestHighLevelClient restHighLevelClient,
       LiteratureEsResponseParser esResponseParser,
-      EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder) {
+      EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder,
+      EsConfig esConfig) {
     this.index = esClientConfigProperties.getIndex();
     this.maxResultWindow = esClientConfigProperties.getMaxResultWindow();
     this.restHighLevelClient = restHighLevelClient;
     this.esResponseParser = esResponseParser;
     this.esSearchRequestBuilder = esSearchRequestBuilder;
+    this.esConfig = esConfig;
+  }
+
+  public RestHighLevelClient restHighLevelClient() {
+    if(!restHighLevelClient.getLowLevelClient().isRunning()) {
+      restHighLevelClient = esConfig.reCreateRestHighLevelClient();
+    }
+    return restHighLevelClient;
   }
 
   @Override
@@ -74,8 +86,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
       SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
-          esResponseParser.buildSearchResponse(
-              restHighLevelClient.search(searchRequest, requestOptions), literatureSearchRequest);
+          esResponseParser.buildSearchResponse(restHighLevelClient().search(searchRequest, requestOptions), literatureSearchRequest);
 
       if (offsetExceeded) {
         response.setOffset(offset);
@@ -91,8 +102,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   public Optional<LiteratureSearchResult> get(Object identifier) {
     SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetRequest(identifier, index);
     try {
-      return esResponseParser.buildGetResponse(
-          restHighLevelClient.search(getByIdRequest, RequestOptions.DEFAULT));
+      return esResponseParser.buildGetResponse(restHighLevelClient().search(getByIdRequest, RequestOptions.DEFAULT));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
