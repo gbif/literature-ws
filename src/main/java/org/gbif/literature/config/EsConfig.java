@@ -33,26 +33,29 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EsConfig {
 
-  @Autowired
-  private ApplicationContext applicationContext;
+  @Autowired private ApplicationContext applicationContext;
 
   /**
    * Re-creates the instance of the RestHighLevelClient.
    */
   public RestHighLevelClient reCreateRestHighLevelClient() {
-    RestHighLevelClient restHighLevelClient = applicationContext.getBean("restHighLevelClient", RestHighLevelClient.class);
+    RestHighLevelClient restHighLevelClient =
+        applicationContext.getBean("restHighLevelClient", RestHighLevelClient.class);
     if (!restHighLevelClient.getLowLevelClient().isRunning()) {
       log.warn("Recreating Elasticsearch RestHighLevelClient");
-      DefaultSingletonBeanRegistry registry = (DefaultSingletonBeanRegistry) applicationContext.getAutowireCapableBeanFactory();
+      DefaultSingletonBeanRegistry registry =
+          (DefaultSingletonBeanRegistry) applicationContext.getAutowireCapableBeanFactory();
       registry.destroySingleton("restHighLevelClient");
-      registry.registerSingleton("restHighLevelClient", reCreateRestHighLevelClient(applicationContext.getBean(EsClientConfigProperties.class)));
+      registry.registerSingleton(
+          "restHighLevelClient",
+          restHighLevelClient(applicationContext.getBean(EsClientConfigProperties.class)));
     }
     return restHighLevelClient;
   }
 
   @Bean("restHighLevelClient")
   @Primary
-  public RestHighLevelClient reCreateRestHighLevelClient(EsClientConfigProperties esProperties) {
+  public RestHighLevelClient restHighLevelClient(EsClientConfigProperties esProperties) {
     return provideEsClient(esProperties);
   }
 

@@ -59,7 +59,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   }
 
   public RestHighLevelClient restHighLevelClient() {
-    if(!restHighLevelClient.getLowLevelClient().isRunning()) {
+    if (!restHighLevelClient.getLowLevelClient().isRunning()) {
       restHighLevelClient = esConfig.reCreateRestHighLevelClient();
     }
     return restHighLevelClient;
@@ -86,7 +86,8 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
       SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
-          esResponseParser.buildSearchResponse(restHighLevelClient().search(searchRequest, requestOptions), literatureSearchRequest);
+          esResponseParser.buildSearchResponse(
+              restHighLevelClient().search(searchRequest, requestOptions), literatureSearchRequest);
 
       if (offsetExceeded) {
         response.setOffset(offset);
@@ -102,7 +103,8 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   public Optional<LiteratureSearchResult> get(Object identifier) {
     SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetRequest(identifier, index);
     try {
-      return esResponseParser.buildGetResponse(restHighLevelClient().search(getByIdRequest, RequestOptions.DEFAULT));
+      return esResponseParser.buildGetResponse(
+          restHighLevelClient().search(getByIdRequest, RequestOptions.DEFAULT));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
