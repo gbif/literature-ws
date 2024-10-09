@@ -1,8 +1,13 @@
 spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
   application:
     name: literature-ws
+  cloud:
+    zookeeper:
+      enabled: false
 elasticsearch:
-  hosts: http://cms-search.gbif-dev.org:9200/
+  hosts: http://localhost:9200
   index: literature
   connectionTimeOut: 60000
   socketTimeOut: 60000
@@ -10,3 +15,4 @@ elasticsearch:
   maxResultWindow: 20000
 literature:
   bufferLimitBytesExport: 200000000
+
