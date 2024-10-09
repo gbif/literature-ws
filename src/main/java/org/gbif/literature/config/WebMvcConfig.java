@@ -47,5 +47,4 @@ public class WebMvcConfig implements WebMvcConfigurer {
   public ObjectMapper registryObjectMapper() {
     return JacksonJsonObjectMapperProvider.getObjectMapper();
   }
-
 }

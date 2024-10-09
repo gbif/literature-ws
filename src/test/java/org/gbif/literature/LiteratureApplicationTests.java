@@ -26,22 +26,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @SpringBootTest
 class LiteratureApplicationTests {
-  @MockBean
-  UserDetailsService  userDetailsService;
-  @MockBean
-  PasswordEncoder passwordEncoder;
+  @MockBean UserDetailsService userDetailsService;
+  @MockBean PasswordEncoder passwordEncoder;
 
-  @MockBean
-  IdentityFilter identityFilter;
+  @MockBean IdentityFilter identityFilter;
 
-  @MockBean
-  AppIdentityFilter appIdentityFilter;
+  @MockBean AppIdentityFilter appIdentityFilter;
 
-  @MockBean
-  HttpServletRequestWrapperFilter httpServletRequestWrapperFilter;
+  @MockBean HttpServletRequestWrapperFilter httpServletRequestWrapperFilter;
 
-  @MockBean
-  RequestHeaderParamUpdateFilter requestHeaderParamUpdateFilter;
+  @MockBean RequestHeaderParamUpdateFilter requestHeaderParamUpdateFilter;
 
   @Test
   void contextLoads() {}
