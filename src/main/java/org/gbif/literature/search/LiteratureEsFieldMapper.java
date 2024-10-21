@@ -52,6 +52,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put(LiteratureSearchParameter.TOPICS, "topics")
           .put(LiteratureSearchParameter.GBIF_DATASET_KEY, "gbifDatasetKey")
           .put(LiteratureSearchParameter.PUBLISHING_ORGANIZATION_KEY, "publishingOrganizationKey")
+          .put(LiteratureSearchParameter.PUBLISHING_COUNTRY, "publishingCountry")
           .put(LiteratureSearchParameter.PUBLISHER, "publisher")
           .put(LiteratureSearchParameter.SOURCE, "source")
           .put(LiteratureSearchParameter.PEER_REVIEW, "peerReview")
@@ -183,6 +184,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
       "gbifRegion",
       "gbifDatasetKey",
       "publishingOrganizationKey",
+      "publishingCountry",
       "gbifTaxonKey",
       "gbifOccurrenceKey",
       "gbifHigherTaxonKey",
