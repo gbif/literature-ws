@@ -94,6 +94,7 @@ public class LiteratureSearchResultConverter
     getDateValue(fields, "updatedAt").ifPresent(result::setModified);
     getListValue(fields, "websites").ifPresent(result::setWebsites);
     getIntegerValue(fields, "year").ifPresent(result::setYear);
+    getCountrySetValue(fields, "publishingCountry").ifPresent(result::setPublishingCountry);
 
     return result;
   }
