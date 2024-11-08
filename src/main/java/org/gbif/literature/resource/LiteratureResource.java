@@ -225,13 +225,14 @@ public class LiteratureResource {
             in = ParameterIn.QUERY,
             explode = Explode.TRUE),
         @Parameter(
-          name = "publishingCountry",
-          description = "Country of the publisher whose dataset is referenced in publication. Country codes are listed in our "
-          + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
-            + REPEATED,
-          array = @ArraySchema(schema = @Schema(implementation = Country.class)),
-          in = ParameterIn.QUERY,
-          explode = Explode.TRUE),
+            name = "publishingCountry",
+            description =
+                "Country of the publisher whose dataset is referenced in publication. Country codes are listed in our "
+                    + "[Country enum](https://api.gbif.org/v1/enumeration/country)."
+                    + REPEATED,
+            array = @ArraySchema(schema = @Schema(implementation = Country.class)),
+            in = ParameterIn.QUERY,
+            explode = Explode.TRUE),
         @Parameter(
             name = "relevance",
             description =
