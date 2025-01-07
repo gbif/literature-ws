@@ -31,7 +31,6 @@ import org.gbif.literature.export.LiteraturePager;
 import org.gbif.literature.search.LiteratureSearchService;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.annotation.Inherited;
@@ -41,8 +40,6 @@ import java.lang.annotation.Target;
 import java.util.Date;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -51,6 +48,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -392,20 +390,22 @@ public class LiteratureResource {
         @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
       })
   @GetMapping(value = "export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-  public void export(
-      HttpServletResponse response,
-      @Parameter(hidden = true) LiteratureSearchRequest searchRequest,
-      @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format)
-      throws IOException {
+  public ResponseEntity<StreamingResponseBody> export(@Parameter(hidden = true) LiteratureSearchRequest searchRequest,
+                                                      @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
 
-    response.setHeader(
-        HttpHeaders.CONTENT_DISPOSITION,
-        FILE_HEADER_PRE + System.currentTimeMillis() + '.' + format.name().toLowerCase());
-
-    try (Writer writer = new BufferedWriter(new OutputStreamWriter(response.getOutputStream()))) {
-      CsvWriter.literatureSearchResultCsvWriter(
-              new LiteraturePager(searchService, searchRequest, EXPORT_PAGE_LIMIT), format)
+    StreamingResponseBody stream = outputStream -> {
+      try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
+        CsvWriter.literatureSearchResultCsvWriter(
+            new LiteraturePager(searchService, searchRequest, EXPORT_PAGE_LIMIT), format)
           .export(writer);
-    }
+      }
+    };
+
+    String fileName = FILE_HEADER_PRE + System.currentTimeMillis() + '.' + format.name().toLowerCase();
+
+    return ResponseEntity.ok()
+      .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+      .contentType(MediaType.APPLICATION_OCTET_STREAM)
+      .body(stream);
   }
 }
