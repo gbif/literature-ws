@@ -393,6 +393,7 @@ public class LiteratureResource {
   public ResponseEntity<StreamingResponseBody> export(@Parameter(hidden = true) LiteratureSearchRequest searchRequest,
                                                       @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
 
+    //Creates a stream to write the CSV file
     StreamingResponseBody stream = outputStream -> {
       try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
         CsvWriter.literatureSearchResultCsvWriter(
