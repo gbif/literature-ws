@@ -93,7 +93,7 @@ public class LiteratureResource {
   private static final String FILE_HEADER_PRE = "attachment; filename=literature_";
 
   // Page size to iterate over literature search export service
-  private static final int EXPORT_PAGE_LIMIT = 5_000;
+  private static final int EXPORT_PAGE_LIMIT = 300;
 
   private final LiteratureSearchService searchService;
 
