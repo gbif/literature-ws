@@ -404,7 +404,7 @@ public class LiteratureResource {
     String fileName = FILE_HEADER_PRE + System.currentTimeMillis() + '.' + format.name().toLowerCase();
 
     return ResponseEntity.ok()
-      .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+      .header(HttpHeaders.CONTENT_DISPOSITION, fileName)
       .contentType(MediaType.APPLICATION_OCTET_STREAM)
       .body(stream);
   }
