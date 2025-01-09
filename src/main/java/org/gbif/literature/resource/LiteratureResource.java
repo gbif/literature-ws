@@ -391,29 +391,37 @@ public class LiteratureResource {
         @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
       })
   @GetMapping(value = "export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-  public ResponseEntity<StreamingResponseBody> export(@Parameter(hidden = true) LiteratureSearchRequest searchRequest,
-                                                      @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
+  public ResponseEntity<StreamingResponseBody> export(
+      @Parameter(hidden = true) LiteratureSearchRequest searchRequest,
+      @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
 
-    //Creates a stream to write the CSV file
-    StreamingResponseBody stream = outputStream -> {
-      try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
-        CsvWriter.literatureSearchResultCsvWriter(
-            new LiteraturePager(searchService, searchRequest, EXPORT_PAGE_LIMIT, response -> {
-              try {
-                writer.flush();
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            }), format)
-          .export(writer);
-      }
-    };
+    // Creates a stream to write the CSV file
+    StreamingResponseBody stream =
+        outputStream -> {
+          try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
+            CsvWriter.literatureSearchResultCsvWriter(
+                    new LiteraturePager(
+                        searchService,
+                        searchRequest,
+                        EXPORT_PAGE_LIMIT,
+                        response -> {
+                          try {
+                            writer.flush();
+                          } catch (IOException e) {
+                            throw new RuntimeException(e);
+                          }
+                        }),
+                    format)
+                .export(writer);
+          }
+        };
 
-    String fileName = FILE_HEADER_PRE + System.currentTimeMillis() + '.' + format.name().toLowerCase();
+    String fileName =
+        FILE_HEADER_PRE + System.currentTimeMillis() + '.' + format.name().toLowerCase();
 
     return ResponseEntity.ok()
-      .header(HttpHeaders.CONTENT_DISPOSITION, fileName)
-      .contentType(MediaType.APPLICATION_OCTET_STREAM)
-      .body(stream);
+        .header(HttpHeaders.CONTENT_DISPOSITION, fileName)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .body(stream);
   }
 }
