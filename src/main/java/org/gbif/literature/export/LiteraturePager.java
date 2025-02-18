@@ -45,7 +45,8 @@ public class LiteraturePager extends BasePager<LiteratureSearchResult> {
   public PagingResponse<LiteratureSearchResult> nextPage(PagingRequest pagingRequest) {
     literatureSearchRequest.setOffset(pagingRequest.getOffset());
     literatureSearchRequest.setLimit(pagingRequest.getLimit());
-    PagingResponse<LiteratureSearchResult> response = literatureSearchService.exportSearch(literatureSearchRequest);
+    PagingResponse<LiteratureSearchResult> response =
+        literatureSearchService.exportSearch(literatureSearchRequest);
     onPageResponse.accept(response);
     return response;
   }
