@@ -14,11 +14,12 @@
 package org.gbif.literature;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.autoconfigure.elasticsearch.ElasticSearchRestHealthContributorAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {ElasticSearchRestHealthContributorAutoConfiguration.class})
 @EnableConfigurationProperties
 @ComponentScan(basePackages = {"org.gbif.ws.server.mapper", "org.gbif.literature"})
 public class LiteratureApplication {
