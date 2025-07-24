@@ -13,9 +13,18 @@
  */
 package org.gbif.literature.search;
 
-import org.elasticsearch.search.SearchHit;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 
+/**
+ * Converts search hits into concrete result objects.
+ */
 public interface SearchResultConverter<T> {
 
-  T toSearchResult(SearchHit searchHit);
+  /**
+   * Converts a search hit into a concrete result object.
+   * 
+   * @param hit the search hit
+   * @return converted result object
+   */
+  T toResult(Hit<Object> hit);
 }

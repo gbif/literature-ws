@@ -21,33 +21,25 @@ import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.util.iterables.BasePager;
 import org.gbif.literature.search.LiteratureSearchService;
 
-import java.util.function.Consumer;
-
 /** Iterates over results of {@link LiteratureSearchService#search(SearchRequest)}. */
 public class LiteraturePager extends BasePager<LiteratureSearchResult> {
 
   private final LiteratureSearchService literatureSearchService;
   private final LiteratureSearchRequest literatureSearchRequest;
-  private final Consumer<PagingResponse<LiteratureSearchResult>> onPageResponse;
 
   public LiteraturePager(
       LiteratureSearchService literatureSearchService,
       LiteratureSearchRequest literatureSearchRequest,
-      int pageSize,
-      Consumer<PagingResponse<LiteratureSearchResult>> onPageResponse) {
+      int pageSize) {
     super(pageSize);
     this.literatureSearchService = literatureSearchService;
     this.literatureSearchRequest = literatureSearchRequest;
-    this.onPageResponse = onPageResponse;
   }
 
   @Override
   public PagingResponse<LiteratureSearchResult> nextPage(PagingRequest pagingRequest) {
     literatureSearchRequest.setOffset(pagingRequest.getOffset());
     literatureSearchRequest.setLimit(pagingRequest.getLimit());
-    PagingResponse<LiteratureSearchResult> response =
-        literatureSearchService.exportSearch(literatureSearchRequest);
-    onPageResponse.accept(response);
-    return response;
+    return literatureSearchService.exportSearch(literatureSearchRequest);
   }
 }

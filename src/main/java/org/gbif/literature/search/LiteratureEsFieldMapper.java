@@ -21,20 +21,15 @@ import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.Operator;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.search.MatchQuery;
-import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 import static org.gbif.literature.util.EsQueryUtils.escapeQuery;
 
@@ -66,6 +61,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put(LiteratureSearchParameter.GBIF_PROJECT_IDENTIFIER, "gbifProjectIdentifier")
           .put(LiteratureSearchParameter.GBIF_PROGRAMME, "gbifProgrammeAcronym")
           .put(LiteratureSearchParameter.LANGUAGE, "language")
+          .put(LiteratureSearchParameter.DOI, "identifiers.doi") // nested field path
           .put(LiteratureSearchParameter.ADDED, "created")
           .put(LiteratureSearchParameter.PUBLISHED, "createdAt")
           .put(LiteratureSearchParameter.DISCOVERED, "accessed")
@@ -79,8 +75,10 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
           .put("topics", LiteratureTopic.values().length)
           .build();
 
-  private static final FieldSortBuilder[] SORT =
-      new FieldSortBuilder[] {SortBuilders.fieldSort("created").order(SortOrder.DESC)};
+  private static final SortOptions[] SORT =
+      new SortOptions[] {
+        SortOptions.of(s -> s.field(f -> f.field("created").order(SortOrder.Desc)))
+      };
 
   private static final String[] EXCLUDE_FIELDS =
       new String[] {
@@ -146,7 +144,7 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   }
 
   @Override
-  public SortBuilder<? extends SortBuilder>[] sorts() {
+  public SortOptions[] sorts() {
     return SORT;
   }
 
@@ -201,20 +199,14 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   }
 
   @Override
-  public QueryBuilder fullTextQuery(String q) {
-    BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
-
-    boolQueryBuilder
-        .should()
-        .add(
-            QueryBuilders.matchQuery("_all", escapeQuery(q))
-                .operator(Operator.AND)
-                .boost(10.0F)
-                .fuzziness("AUTO")
-                .prefixLength(3)
-                .lenient(true)
-                .zeroTermsQuery(MatchQuery.ZeroTermsQuery.ALL));
-
-    return boolQueryBuilder;
+  public Query fullTextQuery(String q) {
+    String escapedQuery = escapeQuery(q);
+    return Query.of(query -> query.multiMatch(mm -> mm
+        .query(escapedQuery)
+        .fields("title^10", "abstract^2", "_all^1", "source", "publisher", "keywords^5")
+        .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)
+        .fuzziness("AUTO")
+        .prefixLength(3)
+    ));
   }
 }
