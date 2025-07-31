@@ -39,7 +39,8 @@ public class LiteratureEsSearchRequestBuilder
    * Override to provide special handling for DOI nested queries.
    */
   @Override
-  protected List<Query> buildTermQuery(Collection<String> values, LiteratureSearchParameter param, String esField) {
+  protected List<Query> buildTermQuery(
+      Collection<String> values, LiteratureSearchParameter param, String esField) {
     // Special handling for DOI - nested query required
     if (param == LiteratureSearchParameter.DOI && esField.equals("identifiers.doi")) {
       return buildDoiNestedQuery(values);
@@ -58,19 +59,23 @@ public class LiteratureEsSearchRequestBuilder
 
     if (values != null && !values.isEmpty()) {
       // Convert DOI values to lowercase for case-insensitive search
-      List<FieldValue> doiValues = values.stream()
-          .map(String::toLowerCase)
-          .map(FieldValue::of)
-          .toList();
+      List<FieldValue> doiValues =
+          values.stream().map(String::toLowerCase).map(FieldValue::of).toList();
 
       // Build nested query for identifiers.doi
-      Query nestedQuery = Query.of(q -> q.nested(n -> n
-          .path("identifiers")
-          .query(Query.of(nq -> nq.terms(t -> t
-              .field("identifiers.doi")
-              .terms(ts -> ts.value(doiValues))
-          )))
-      ));
+      Query nestedQuery =
+          Query.of(
+              q ->
+                  q.nested(
+                      n ->
+                          n.path("identifiers")
+                              .query(
+                                  Query.of(
+                                      nq ->
+                                          nq.terms(
+                                              t ->
+                                                  t.field("identifiers.doi")
+                                                      .terms(ts -> ts.value(doiValues)))))));
 
       queries.add(nestedQuery);
     }

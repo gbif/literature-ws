@@ -114,19 +114,25 @@ public class LiteratureSearchResultConverter
     extractStringList(source, "keywords").ifPresent(result::setKeywords);
     extractValue(source, "language", node -> Language.fromIsoCode(node.asText()))
         .ifPresent(result::setLanguage);
-    extractValue(source, "literatureType", node -> LiteratureType.valueOf(node.asText().toUpperCase()))
+    extractValue(
+            source, "literatureType", node -> LiteratureType.valueOf(node.asText().toUpperCase()))
         .ifPresent(result::setLiteratureType);
     extractIntegerField(source, "month").ifPresent(result::setMonth);
     extractStringField(source, "notes").ifPresent(result::setNotes);
     extractBooleanField(source, "openAccess").ifPresent(result::setOpenAccess);
     extractBooleanField(source, "peerReview").ifPresent(result::setPeerReview);
     extractStringField(source, "publisher").ifPresent(result::setPublisher);
-    extractSet(source, "relevance", LiteratureRelevance.class, s -> LiteratureRelevance.valueOf(s.toUpperCase()))
+    extractSet(
+            source,
+            "relevance",
+            LiteratureRelevance.class,
+            s -> LiteratureRelevance.valueOf(s.toUpperCase()))
         .ifPresent(result::setRelevance);
     extractStringField(source, "source").ifPresent(result::setSource);
     extractStringList(source, "tags").ifPresent(result::setTags);
     extractStringField(source, "title").ifPresent(result::setTitle);
-    extractSet(source, "topics", LiteratureTopic.class, s -> LiteratureTopic.valueOf(s.toUpperCase()))
+    extractSet(
+            source, "topics", LiteratureTopic.class, s -> LiteratureTopic.valueOf(s.toUpperCase()))
         .ifPresent(result::setTopics);
     extractDateField(source, "modified").ifPresent(result::setModified);
     extractStringList(source, "websites").ifPresent(result::setWebsites);
@@ -135,8 +141,7 @@ public class LiteratureSearchResultConverter
         .ifPresent(result::setPublishingCountry);
   }
 
-  private void handleHighlighting(
-      LiteratureSearchResult result, Hit<Object> hit, JsonNode source) {
+  private void handleHighlighting(LiteratureSearchResult result, Hit<Object> hit, JsonNode source) {
     if (hit.highlight() != null) {
       if (hit.highlight().containsKey("title") && !hit.highlight().get("title").isEmpty()) {
         result.setTitle(hit.highlight().get("title").get(0));

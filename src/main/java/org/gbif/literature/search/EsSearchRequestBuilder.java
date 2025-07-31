@@ -13,8 +13,6 @@
  */
 package org.gbif.literature.search;
 
-import co.elastic.clients.elasticsearch._types.SortOptions;
-
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -22,7 +20,6 @@ import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.Language;
-import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
@@ -41,6 +39,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 
 import static org.gbif.api.util.SearchTypeValidator.isDateRange;
+import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
@@ -59,7 +58,8 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   private static final String POST_HL_TAG = "</em>";
 
   // Nested fields that require special query handling
-  private static final Set<String> NESTED_FIELDS = Set.of("authors", "editors", "translators", "identifiers");
+  private static final Set<String> NESTED_FIELDS =
+      Set.of("authors", "editors", "translators", "identifiers");
 
   private final EsFieldMapper<P> esFieldMapper;
 
@@ -108,23 +108,27 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   /**
    * Configures basic request parameters.
    */
-  private void configureBasicRequest(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest, String index) {
+  private void configureBasicRequest(
+      SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest, String index) {
     builder.index(index);
     builder.size(searchRequest.getLimit());
     builder.from((int) searchRequest.getOffset());
     builder.trackTotalHits(t -> t.enabled(true));
 
     // Source filtering
-    builder.source(s -> s.filter(f -> f
-        .includes(List.of(esFieldMapper.getMappedFields()))
-        .excludes(List.of(esFieldMapper.excludeFields()))
-    ));
+    builder.source(
+        s ->
+            s.filter(
+                f ->
+                    f.includes(List.of(esFieldMapper.getMappedFields()))
+                        .excludes(List.of(esFieldMapper.excludeFields()))));
   }
 
   /**
    * Builds the main bool query combining text search and filters.
    */
-  private BoolQuery buildMainQuery(FacetedSearchRequest<P> searchRequest, GroupedParams<P> groupedParams) {
+  private BoolQuery buildMainQuery(
+      FacetedSearchRequest<P> searchRequest, GroupedParams<P> groupedParams) {
     BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
 
     // Main text query (must clause)
@@ -139,10 +143,11 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   /**
    * Adds the main text query to the bool query.
    */
-  private void addTextQuery(BoolQuery.Builder boolQueryBuilder, FacetedSearchRequest<P> searchRequest) {
-    if (searchRequest.getQ() == null ||
-        searchRequest.getQ().trim().isEmpty() ||
-        searchRequest.getQ().equals(SearchConstants.QUERY_WILDCARD)) {
+  private void addTextQuery(
+      BoolQuery.Builder boolQueryBuilder, FacetedSearchRequest<P> searchRequest) {
+    if (searchRequest.getQ() == null
+        || searchRequest.getQ().trim().isEmpty()
+        || searchRequest.getQ().equals(SearchConstants.QUERY_WILDCARD)) {
       boolQueryBuilder.must(q -> q.matchAll(ma -> ma));
     } else {
       boolQueryBuilder.must(esFieldMapper.fullTextQuery(searchRequest.getQ()));
@@ -154,10 +159,14 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
    */
   private void addQueryFilters(BoolQuery.Builder boolQueryBuilder, GroupedParams<P> groupedParams) {
     if (groupedParams.queryParams != null && !groupedParams.queryParams.isEmpty()) {
-      List<Query> queryFilters = groupedParams.queryParams.entrySet().stream()
-          .filter(e -> esFieldMapper.get(e.getKey()) != null)
-          .flatMap(e -> buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey())).stream())
-          .toList();
+      List<Query> queryFilters =
+          groupedParams.queryParams.entrySet().stream()
+              .filter(e -> esFieldMapper.get(e.getKey()) != null)
+              .flatMap(
+                  e ->
+                      buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
+                          .stream())
+              .toList();
 
       if (!queryFilters.isEmpty()) {
         boolQueryBuilder.filter(queryFilters);
@@ -170,9 +179,13 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
    */
   private void addPostFilter(SearchRequest.Builder builder, GroupedParams<P> groupedParams) {
     if (groupedParams.postFilterParams != null && !groupedParams.postFilterParams.isEmpty()) {
-      List<Query> postFilterQueries = groupedParams.postFilterParams.entrySet().stream()
-          .flatMap(e -> buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey())).stream())
-          .toList();
+      List<Query> postFilterQueries =
+          groupedParams.postFilterParams.entrySet().stream()
+              .flatMap(
+                  e ->
+                      buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
+                          .stream())
+              .toList();
 
       if (!postFilterQueries.isEmpty()) {
         builder.postFilter(q -> q.bool(b -> b.filter(postFilterQueries)));
@@ -183,10 +196,11 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   /**
    * Configures sorting based on query type.
    */
-  private void configureSorting(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest) {
-    if (searchRequest.getQ() == null ||
-        searchRequest.getQ().trim().isEmpty() ||
-        searchRequest.getQ().equals(SearchConstants.QUERY_WILDCARD)) {
+  private void configureSorting(
+      SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest) {
+    if (searchRequest.getQ() == null
+        || searchRequest.getQ().trim().isEmpty()
+        || searchRequest.getQ().equals(SearchConstants.QUERY_WILDCARD)) {
       // Default sorting for non-text queries
       for (SortOptions sort : esFieldMapper.sorts()) {
         builder.sort(sort);
@@ -200,22 +214,26 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   /**
    * Configures highlighting if requested.
    */
-  private void configureHighlighting(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest) {
+  private void configureHighlighting(
+      SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest) {
     if (searchRequest.isHighlight()) {
-      builder.highlight(h -> h
-          .numberOfFragments(0)
-          .preTags(PRE_HL_TAG)
-          .postTags(POST_HL_TAG)
-          .fields("title", f -> f)
-          .fields("abstract", f -> f)
-      );
+      builder.highlight(
+          h ->
+              h.numberOfFragments(0)
+                  .preTags(PRE_HL_TAG)
+                  .postTags(POST_HL_TAG)
+                  .fields("title", f -> f)
+                  .fields("abstract", f -> f));
     }
   }
 
   /**
    * Adds aggregations with multi-select facet support.
    */
-  private void addAggregations(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest, GroupedParams<P> groupedParams) {
+  private void addAggregations(
+      SearchRequest.Builder builder,
+      FacetedSearchRequest<P> searchRequest,
+      GroupedParams<P> groupedParams) {
     if (searchRequest.getFacets() == null || searchRequest.getFacets().isEmpty()) {
       return;
     }
@@ -232,16 +250,20 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   /**
    * Adds a single facet aggregation with multi-select logic.
    */
-  private void addSingleFacetAggregation(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest,
-                                        GroupedParams<P> groupedParams, P facetParam, String esField) {
+  private void addSingleFacetAggregation(
+      SearchRequest.Builder builder,
+      FacetedSearchRequest<P> searchRequest,
+      GroupedParams<P> groupedParams,
+      P facetParam,
+      String esField) {
 
     // Base terms aggregation
     Aggregation termsAgg = createTermsAggregation(searchRequest, facetParam, esField);
 
     // Handle multi-select facet logic
-    if (searchRequest.isFacetMultiSelect() &&
-        groupedParams.postFilterParams != null &&
-        !groupedParams.postFilterParams.isEmpty()) {
+    if (searchRequest.isFacetMultiSelect()
+        && groupedParams.postFilterParams != null
+        && !groupedParams.postFilterParams.isEmpty()) {
 
       addMultiSelectFacetAggregation(builder, groupedParams, facetParam, esField, termsAgg);
     } else {
@@ -252,25 +274,33 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   /**
    * Creates a terms aggregation for a facet.
    */
-  private Aggregation createTermsAggregation(FacetedSearchRequest<P> searchRequest, P facetParam, String esField) {
+  private Aggregation createTermsAggregation(
+      FacetedSearchRequest<P> searchRequest, P facetParam, String esField) {
     int facetOffset = extractFacetOffset(searchRequest, facetParam);
     int facetLimit = extractFacetLimit(searchRequest, facetParam);
     int aggsSize = calculateAggsSize(esField, facetOffset, facetLimit);
 
-    return Aggregation.of(a -> a
-        .terms(t -> t
-            .field(esField)
-            .size(aggsSize)
-            .minDocCount(searchRequest.getFacetMinCount() != null ? searchRequest.getFacetMinCount() : 1)
-        )
-    );
+    return Aggregation.of(
+        a ->
+            a.terms(
+                t ->
+                    t.field(esField)
+                        .size(aggsSize)
+                        .minDocCount(
+                            searchRequest.getFacetMinCount() != null
+                                ? searchRequest.getFacetMinCount()
+                                : 1)));
   }
 
   /**
    * Adds a multi-select facet aggregation with proper filter isolation.
    */
-  private void addMultiSelectFacetAggregation(SearchRequest.Builder builder, GroupedParams<P> groupedParams,
-                                             P facetParam, String esField, Aggregation termsAgg) {
+  private void addMultiSelectFacetAggregation(
+      SearchRequest.Builder builder,
+      GroupedParams<P> groupedParams,
+      P facetParam,
+      String esField,
+      Aggregation termsAgg) {
 
     // Create filter of all other active facet filters (excluding current facet)
     Map<P, Set<String>> otherFacetFilters = new HashMap<>(groupedParams.postFilterParams);
@@ -278,17 +308,18 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     if (!otherFacetFilters.isEmpty()) {
       // Build filter query for other facets
-      List<Query> filterQueries = otherFacetFilters.entrySet().stream()
-          .flatMap(e -> buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey())).stream())
-          .toList();
+      List<Query> filterQueries =
+          otherFacetFilters.entrySet().stream()
+              .flatMap(
+                  e ->
+                      buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
+                          .stream())
+              .toList();
 
       Query filterQuery = Query.of(q -> q.bool(b -> b.filter(filterQueries)));
 
       // Wrap terms aggregation in filter aggregation
-      builder.aggregations(esField, agg -> agg
-          .filter(filterQuery)
-          .aggregations("inner", termsAgg)
-      );
+      builder.aggregations(esField, agg -> agg.filter(filterQuery).aggregations("inner", termsAgg));
     } else {
       builder.aggregations(esField, termsAgg);
     }
@@ -298,8 +329,10 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
    * Calculates appropriate aggregation size with limits.
    */
   private int calculateAggsSize(String esField, int facetOffset, int facetLimit) {
-    int maxCardinality = esFieldMapper.getCardinality(esField) != null ?
-        esFieldMapper.getCardinality(esField) : Integer.MAX_VALUE;
+    int maxCardinality =
+        esFieldMapper.getCardinality(esField) != null
+            ? esFieldMapper.getCardinality(esField)
+            : Integer.MAX_VALUE;
 
     int limit = Math.min(facetOffset + facetLimit, maxCardinality);
 
@@ -316,16 +349,18 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   public SearchRequest buildGetRequest(Object identifier, String index) {
     return new SearchRequest.Builder()
         .index(index)
-        .source(s -> s
-            .filter(f -> f
-                .includes(List.of(esFieldMapper.getMappedFields()))
-                .excludes(List.of(esFieldMapper.excludeFields()))
-            )
-        )
-        .query(Query.of(q -> q.match(MatchQuery.of(m -> m
-            .field("id")
-            .query(FieldValue.of(identifier.toString()))
-        ))))
+        .source(
+            s ->
+                s.filter(
+                    f ->
+                        f.includes(List.of(esFieldMapper.getMappedFields()))
+                            .excludes(List.of(esFieldMapper.excludeFields()))))
+        .query(
+            Query.of(
+                q ->
+                    q.match(
+                        MatchQuery.of(
+                            m -> m.field("id").query(FieldValue.of(identifier.toString()))))))
         .build();
   }
 
@@ -377,17 +412,20 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     String nestedPath = fieldParts[0];
 
-    List<FieldValue> fieldValues = values.stream()
-        .map(FieldValue::of)
-        .toList();
+    List<FieldValue> fieldValues = values.stream().map(FieldValue::of).toList();
 
-    return Query.of(q -> q.nested(n -> n
-        .path(nestedPath)
-        .query(Query.of(nq -> nq.terms(t -> t
-            .field(esField)
-            .terms(ts -> ts.value(fieldValues))
-        )))
-    ));
+    return Query.of(
+        q ->
+            q.nested(
+                n ->
+                    n.path(nestedPath)
+                        .query(
+                            Query.of(
+                                nq ->
+                                    nq.terms(
+                                        t ->
+                                            t.field(esField)
+                                                .terms(ts -> ts.value(fieldValues)))))));
   }
 
   /**
@@ -397,9 +435,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     if (values.size() == 1) {
       return Query.of(q -> q.term(t -> t.field(esField).value(FieldValue.of(values.get(0)))));
     } else {
-      List<FieldValue> fieldValues = values.stream()
-          .map(FieldValue::of)
-          .toList();
+      List<FieldValue> fieldValues = values.stream().map(FieldValue::of).toList();
       return Query.of(q -> q.terms(t -> t.field(esField).terms(ts -> ts.value(fieldValues))));
     }
   }
@@ -428,12 +464,17 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     LocalDateTime lower = LOWER_BOUND_RANGE_PARSER.apply(values[0]);
     LocalDateTime upper = UPPER_BOUND_RANGE_PARSER.apply(values[1]);
 
-    return Query.of(q -> q.range(r -> r.date(d -> {
-      d.field(esField);
-      if (lower != null) d.gte(lower.toString());
-      if (upper != null) d.lte(upper.toString());
-      return d;
-    })));
+    return Query.of(
+        q ->
+            q.range(
+                r ->
+                    r.date(
+                        d -> {
+                          d.field(esField);
+                          if (lower != null) d.gte(lower.toString());
+                          if (upper != null) d.lte(upper.toString());
+                          return d;
+                        })));
   }
 
   /**
@@ -445,20 +486,30 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
       Double lowerBound = RANGE_WILDCARD.equals(values[0]) ? null : Double.parseDouble(values[0]);
       Double upperBound = RANGE_WILDCARD.equals(values[1]) ? null : Double.parseDouble(values[1]);
 
-      return Query.of(q -> q.range(r -> r.number(n -> {
-        n.field(esField);
-        if (lowerBound != null) n.gte(lowerBound);
-        if (upperBound != null) n.lte(upperBound);
-        return n;
-      })));
+      return Query.of(
+          q ->
+              q.range(
+                  r ->
+                      r.number(
+                          n -> {
+                            n.field(esField);
+                            if (lowerBound != null) n.gte(lowerBound);
+                            if (upperBound != null) n.lte(upperBound);
+                            return n;
+                          })));
     } catch (NumberFormatException e) {
       // Fall back to term range for non-numeric values
-      return Query.of(q -> q.range(r -> r.term(t -> {
-        t.field(esField);
-        if (!RANGE_WILDCARD.equals(values[0])) t.gte(values[0]);
-        if (!RANGE_WILDCARD.equals(values[1])) t.lte(values[1]);
-        return t;
-      })));
+      return Query.of(
+          q ->
+              q.range(
+                  r ->
+                      r.term(
+                          t -> {
+                            t.field(esField);
+                            if (!RANGE_WILDCARD.equals(values[0])) t.gte(values[0]);
+                            if (!RANGE_WILDCARD.equals(values[1])) t.lte(values[1]);
+                            return t;
+                          })));
     }
   }
 
@@ -507,9 +558,9 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   private GroupedParams<P> groupParameters(FacetedSearchRequest<P> searchRequest) {
     GroupedParams<P> groupedParams = new GroupedParams<>();
 
-    if (!searchRequest.isFacetMultiSelect() ||
-        searchRequest.getFacets() == null ||
-        searchRequest.getFacets().isEmpty()) {
+    if (!searchRequest.isFacetMultiSelect()
+        || searchRequest.getFacets() == null
+        || searchRequest.getFacets().isEmpty()) {
       // No multi-select, all parameters go to main query
       groupedParams.queryParams = searchRequest.getParameters();
       return groupedParams;
@@ -519,13 +570,16 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     groupedParams.queryParams = new HashMap<>();
     groupedParams.postFilterParams = new HashMap<>();
 
-    searchRequest.getParameters().forEach((k, v) -> {
-      if (searchRequest.getFacets().contains(k)) {
-        groupedParams.postFilterParams.put(k, v);
-      } else {
-        groupedParams.queryParams.put(k, v);
-      }
-    });
+    searchRequest
+        .getParameters()
+        .forEach(
+            (k, v) -> {
+              if (searchRequest.getFacets().contains(k)) {
+                groupedParams.postFilterParams.put(k, v);
+              } else {
+                groupedParams.queryParams.put(k, v);
+              }
+            });
 
     return groupedParams;
   }

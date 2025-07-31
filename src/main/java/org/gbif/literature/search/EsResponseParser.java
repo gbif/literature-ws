@@ -37,7 +37,8 @@ public class EsResponseParser<T, P extends SearchParameter> {
   private final SearchResultConverter<T> searchResultConverter;
   private final EsFieldMapper<P> esFieldMapper;
 
-  public EsResponseParser(SearchResultConverter<T> searchResultConverter, EsFieldMapper<P> esFieldMapper) {
+  public EsResponseParser(
+      SearchResultConverter<T> searchResultConverter, EsFieldMapper<P> esFieldMapper) {
     this.searchResultConverter = searchResultConverter;
     this.esFieldMapper = esFieldMapper;
   }
@@ -53,8 +54,10 @@ public class EsResponseParser<T, P extends SearchParameter> {
     response.setResults(extractResults(esResponse));
     response.setCount(esResponse.hits().total().value());
 
-    if (searchRequest.getFacets() != null && !searchRequest.getFacets().isEmpty() &&
-        esResponse.aggregations() != null && !esResponse.aggregations().isEmpty()) {
+    if (searchRequest.getFacets() != null
+        && !searchRequest.getFacets().isEmpty()
+        && esResponse.aggregations() != null
+        && !esResponse.aggregations().isEmpty()) {
       List<Facet<P>> facets = extractFacets(esResponse.aggregations(), searchRequest);
       response.setFacets(facets);
     }
@@ -65,7 +68,8 @@ public class EsResponseParser<T, P extends SearchParameter> {
   /**
    * Builds a response for get-by-id requests.
    */
-  public Optional<T> buildGetResponse(co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {
+  public Optional<T> buildGetResponse(
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {
     List<T> results = extractResults(esResponse);
     return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
   }
@@ -73,37 +77,39 @@ public class EsResponseParser<T, P extends SearchParameter> {
   /**
    * Extracts the results from search hits.
    */
-  private List<T> extractResults(co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {
-    return esResponse.hits().hits().stream()
-        .map(searchResultConverter::toResult)
-        .toList();
+  private List<T> extractResults(
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {
+    return esResponse.hits().hits().stream().map(searchResultConverter::toResult).toList();
   }
 
   /**
    * Extracts facets from ES aggregations.
    */
-  private List<Facet<P>> extractFacets(Map<String, Aggregate> aggregations, FacetedSearchRequest<P> searchRequest) {
+  private List<Facet<P>> extractFacets(
+      Map<String, Aggregate> aggregations, FacetedSearchRequest<P> searchRequest) {
     return searchRequest.getFacets().stream()
-        .map(facetParam -> {
-          String esField = esFieldMapper.get(facetParam);
-          if (esField == null) {
-            return new Facet<>(facetParam);
-          }
+        .map(
+            facetParam -> {
+              String esField = esFieldMapper.get(facetParam);
+              if (esField == null) {
+                return new Facet<>(facetParam);
+              }
 
-          Aggregate agg = aggregations.get(esField);
+              Aggregate agg = aggregations.get(esField);
 
-          if (agg != null) {
-            return extractFacet(agg, facetParam, searchRequest);
-          }
-          return new Facet<>(facetParam);
-        })
+              if (agg != null) {
+                return extractFacet(agg, facetParam, searchRequest);
+              }
+              return new Facet<>(facetParam);
+            })
         .toList();
   }
 
   /**
    * Extracts a single facet from an ES aggregate.
    */
-  private Facet<P> extractFacet(Aggregate aggregate, P facetParam, FacetedSearchRequest<P> searchRequest) {
+  private Facet<P> extractFacet(
+      Aggregate aggregate, P facetParam, FacetedSearchRequest<P> searchRequest) {
     List<Facet.Count> counts = null;
 
     // Handle filter aggregations, which contain a nested "inner" terms aggregation
@@ -134,28 +140,32 @@ public class EsResponseParser<T, P extends SearchParameter> {
   /**
    * Extracts terms from a StringTermsAggregate into a list of Facet.Count objects.
    */
-  private List<Facet.Count> extractStringTermsIntoCounts(StringTermsAggregate termsAgg, P facetParam, FacetedSearchRequest<P> searchRequest) {
+  private List<Facet.Count> extractStringTermsIntoCounts(
+      StringTermsAggregate termsAgg, P facetParam, FacetedSearchRequest<P> searchRequest) {
     long offset = extractFacetOffset(searchRequest, facetParam);
     return termsAgg.buckets().array().stream()
         .skip(offset)
-        .map(bucket -> {
-          String key = bucket.key().stringValue();
-          return new Facet.Count(key, bucket.docCount());
-        })
+        .map(
+            bucket -> {
+              String key = bucket.key().stringValue();
+              return new Facet.Count(key, bucket.docCount());
+            })
         .toList();
   }
 
   /**
    * Extracts terms from a LongTermsAggregate (for numeric fields) into a list of Facet.Count objects.
    */
-  private List<Facet.Count> extractLongTermsIntoCounts(LongTermsAggregate termsAgg, P facetParam, FacetedSearchRequest<P> searchRequest) {
+  private List<Facet.Count> extractLongTermsIntoCounts(
+      LongTermsAggregate termsAgg, P facetParam, FacetedSearchRequest<P> searchRequest) {
     long offset = extractFacetOffset(searchRequest, facetParam);
     return termsAgg.buckets().array().stream()
         .skip(offset)
-        .map(bucket -> {
-          String key = String.valueOf(bucket.key());
-          return new Facet.Count(key, bucket.docCount());
-        })
+        .map(
+            bucket -> {
+              String key = String.valueOf(bucket.key());
+              return new Facet.Count(key, bucket.docCount());
+            })
         .toList();
   }
 }
