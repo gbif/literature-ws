@@ -17,7 +17,6 @@ import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
-import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.GbifRegion;
 import org.gbif.api.vocabulary.Language;
@@ -25,223 +24,223 @@ import org.gbif.api.vocabulary.Language;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import static org.gbif.literature.util.EsQueryUtils.STRING_TO_DATE;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-@SuppressWarnings("unchecked")
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class LiteratureSearchResultConverter
     implements SearchResultConverter<LiteratureSearchResult> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(LiteratureSearchResultConverter.class);
-
-  private static final Pattern NESTED_PATTERN = Pattern.compile("^\\w+(\\.\\w+)+$");
-  private static final Predicate<String> IS_NESTED = s -> NESTED_PATTERN.matcher(s).find();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
+  Logger logger = LoggerFactory.getLogger(LiteratureSearchResultConverter.class);
 
   @Override
-  public LiteratureSearchResult toSearchResult(SearchHit searchHit) {
-    LiteratureSearchResult result = new LiteratureSearchResult();
-    Map<String, Object> fields = searchHit.getSourceAsMap();
+  public LiteratureSearchResult toResult(Hit<Object> hit) {
+    return toSearchResult(hit);
+  }
 
-    getStringValue(fields, "abstract").ifPresent(result::setAbstract);
-    getStringValue(fields, "accessed").ifPresent(result::setDiscovered);
-    getObjectsListValue(fields, "authors").ifPresent(result::setAuthors);
-    getCountrySetValue(fields, "countriesOfCoverage").ifPresent(result::setCountriesOfCoverage);
-    getCountrySetValue(fields, "countriesOfResearcher").ifPresent(result::setCountriesOfResearcher);
-    getDateValue(fields, "created").ifPresent(result::setAdded);
-    getDateValue(fields, "createdAt").ifPresent(result::setPublished);
-    getIntegerValue(fields, "day").ifPresent(result::setDay);
-    getListValue(fields, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
-    // Elements are mapped to integer even though are mapped as keywords
-    getListNumberValue(fields, "gbifOccurrenceKey")
-        .map(keys -> keys.stream().map(Number::longValue).collect(Collectors.toList()))
-        .ifPresent(result::setGbifOccurrenceKey);
-    getListIntValue(fields, "gbifTaxonKey").ifPresent(result::setGbifTaxonKey);
-    getListIntValue(fields, "gbifHigherTaxonKey").ifPresent(result::setGbifHigherTaxonKey);
-    getStringValue(fields, "citationType").ifPresent(result::setCitationType);
-    getRegionSetValue(fields, "gbifRegion").ifPresent(result::setGbifRegion);
-    getListUUIDValue(fields, "gbifNetworkKey").ifPresent(result::setGbifNetworkKey);
-    getListValue(fields, "gbifProjectIdentifier").ifPresent(result::setGbifProjectIdentifier);
-    getListValue(fields, "gbifProgrammeAcronym").ifPresent(result::setGbifProgramme);
-    getUuidValue(fields, "id").ifPresent(result::setId);
-    getMapValue(fields, "identifiers").ifPresent(result::setIdentifiers);
-    getListValue(fields, "keywords").ifPresent(result::setKeywords);
-    getLanguageValue(fields, "language").ifPresent(result::setLanguage);
-    getLiteratureTypeValue(fields, "literatureType").ifPresent(result::setLiteratureType);
-    getIntegerValue(fields, "month").ifPresent(result::setMonth);
-    getStringValue(fields, "notes").ifPresent(result::setNotes);
-    getBooleanValue(fields, "openAccess").ifPresent(result::setOpenAccess);
-    getBooleanValue(fields, "peerReview").ifPresent(result::setPeerReview);
-    getStringValue(fields, "publisher").ifPresent(result::setPublisher);
-    getRelevanceSetValue(fields, "relevance").ifPresent(result::setRelevance);
-    getStringValue(fields, "source").ifPresent(result::setSource);
-    getListValue(fields, "tags").ifPresent(result::setTags);
-    getStringValue(fields, "title").ifPresent(result::setTitle);
-    getTopicSetValue(fields, "topics").ifPresent(result::setTopics);
-    getDateValue(fields, "updatedAt").ifPresent(result::setModified);
-    getListValue(fields, "websites").ifPresent(result::setWebsites);
-    getIntegerValue(fields, "year").ifPresent(result::setYear);
-    getCountrySetValue(fields, "publishingCountry").ifPresent(result::setPublishingCountry);
+  private LiteratureSearchResult toSearchResult(Hit<Object> hit) {
+    LiteratureSearchResult result = new LiteratureSearchResult();
+
+    try {
+      // Convert hit source to JsonNode for easy navigation
+      JsonNode source = MAPPER.valueToTree(hit.source());
+
+      // Set ID from hit if available
+      Optional.ofNullable(hit.id()).map(UUID::fromString).ifPresent(result::setId);
+
+      // Populate fields from source
+      populateFields(result, source);
+
+      // Handle highlighting
+      handleHighlighting(result, hit, source);
+
+    } catch (Exception e) {
+      // Log error but continue with partial result
+      logger.error(
+          "Error parsing literature search result for hit {}: {}", hit.id(), e.getMessage(), e);
+    }
 
     return result;
   }
 
-  private static Optional<String> getStringValue(Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, Function.identity());
+  private void populateFields(LiteratureSearchResult result, JsonNode source) {
+    extractStringField(source, "abstract").ifPresent(result::setAbstract);
+    extractStringField(source, "discovered").ifPresent(result::setDiscovered);
+    extractValue(
+            source,
+            "authors",
+            node -> MAPPER.convertValue(node, new TypeReference<List<Map<String, Object>>>() {}))
+        .ifPresent(result::setAuthors);
+    extractSet(source, "countriesOfCoverage", Country.class, Country::fromIsoCode)
+        .ifPresent(result::setCountriesOfCoverage);
+    extractSet(source, "countriesOfResearcher", Country.class, Country::fromIsoCode)
+        .ifPresent(result::setCountriesOfResearcher);
+    extractDateField(source, "created").ifPresent(result::setAdded);
+    extractDateField(source, "published").ifPresent(result::setPublished);
+    extractIntegerField(source, "day").ifPresent(result::setDay);
+    extractStringList(source, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
+    extractLongList(source, "gbifOccurrenceKey").ifPresent(result::setGbifOccurrenceKey);
+    extractIntegerList(source, "gbifTaxonKey").ifPresent(result::setGbifTaxonKey);
+    extractIntegerList(source, "gbifHigherTaxonKey").ifPresent(result::setGbifHigherTaxonKey);
+    extractStringField(source, "citationType").ifPresent(result::setCitationType);
+    extractSet(source, "gbifRegion", GbifRegion.class, GbifRegion::fromString)
+        .ifPresent(result::setGbifRegion);
+    extractList(source, "gbifNetworkKey", UUID.class, (node) -> UUID.fromString(node.asText()))
+        .ifPresent(result::setGbifNetworkKey);
+    extractStringList(source, "gbifProjectIdentifier").ifPresent(result::setGbifProjectIdentifier);
+    extractStringList(source, "gbifProgrammeAcronym").ifPresent(result::setGbifProgramme);
+    extractValue(source, "id", node -> UUID.fromString(node.asText())).ifPresent(result::setId);
+    extractValue(
+            source,
+            "identifiers",
+            node -> MAPPER.convertValue(node, new TypeReference<Map<String, Object>>() {}))
+        .ifPresent(result::setIdentifiers);
+    extractStringList(source, "keywords").ifPresent(result::setKeywords);
+    extractValue(source, "language", node -> Language.fromIsoCode(node.asText()))
+        .ifPresent(result::setLanguage);
+    extractValue(source, "literatureType", node -> LiteratureType.valueOf(node.asText().toUpperCase()))
+        .ifPresent(result::setLiteratureType);
+    extractIntegerField(source, "month").ifPresent(result::setMonth);
+    extractStringField(source, "notes").ifPresent(result::setNotes);
+    extractBooleanField(source, "openAccess").ifPresent(result::setOpenAccess);
+    extractBooleanField(source, "peerReview").ifPresent(result::setPeerReview);
+    extractStringField(source, "publisher").ifPresent(result::setPublisher);
+    extractSet(source, "relevance", LiteratureRelevance.class, s -> LiteratureRelevance.valueOf(s.toUpperCase()))
+        .ifPresent(result::setRelevance);
+    extractStringField(source, "source").ifPresent(result::setSource);
+    extractStringList(source, "tags").ifPresent(result::setTags);
+    extractStringField(source, "title").ifPresent(result::setTitle);
+    extractSet(source, "topics", LiteratureTopic.class, s -> LiteratureTopic.valueOf(s.toUpperCase()))
+        .ifPresent(result::setTopics);
+    extractDateField(source, "modified").ifPresent(result::setModified);
+    extractStringList(source, "websites").ifPresent(result::setWebsites);
+    extractIntegerField(source, "year").ifPresent(result::setYear);
+    extractSet(source, "publishingCountry", Country.class, Country::fromIsoCode)
+        .ifPresent(result::setPublishingCountry);
   }
 
-  private static Optional<Integer> getIntegerValue(Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, Integer::valueOf);
-  }
-
-  private static Optional<Boolean> getBooleanValue(Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, Boolean::valueOf);
-  }
-
-  private static Optional<Date> getDateValue(Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, STRING_TO_DATE);
-  }
-
-  private static Optional<UUID> getUuidValue(Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, UUID::fromString);
-  }
-
-  private static Optional<Language> getLanguageValue(Map<String, Object> fields, String esField) {
-    return getValue(fields, esField, Language::fromIsoCode);
-  }
-
-  private static Optional<List<String>> getListValue(Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> removeNulls((List<String>) v))
-        .filter(v -> !v.isEmpty());
-  }
-
-  private static <T> Optional<List<T>> getMappedListValue(
-      Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> removeNulls((List<T>) v))
-        .filter(v -> !v.isEmpty());
-  }
-
-  private static Optional<List<Integer>> getListIntValue(
-      Map<String, Object> fields, String esField) {
-    return getMappedListValue(fields, esField);
-  }
-
-  private static Optional<List<UUID>> getListUUIDValue(Map<String, Object> fields, String esField) {
-    return getMappedListValue(fields, esField, UUID::fromString);
-  }
-
-  private static Optional<List<Number>> getListNumberValue(
-      Map<String, Object> fields, String esField) {
-    return getMappedListValue(fields, esField);
-  }
-
-  private static <T> List<T> removeNulls(List<T> collection) {
-    return collection.stream().filter(Objects::nonNull).collect(Collectors.toList());
-  }
-
-  private static Optional<Map<String, Object>> getMapValue(
-      Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> (Map<String, Object>) v)
-        .filter(v -> !v.isEmpty());
-  }
-
-  private static <T> Optional<Set<T>> getMappedSetValue(
-      Map<String, Object> fields, String esField, Function<String, T> mapper) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> removeNulls((List<String>) v))
-        .filter(v -> !v.isEmpty())
-        .map(v -> v.stream().map(mapper).collect(Collectors.toSet()));
-  }
-
-  private static <T> Optional<List<T>> getMappedListValue(
-      Map<String, Object> fields, String esField, Function<String, T> mapper) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> removeNulls((List<String>) v))
-        .filter(v -> !v.isEmpty())
-        .map(v -> v.stream().map(mapper).collect(Collectors.toList()));
-  }
-
-  private static Optional<Set<Country>> getCountrySetValue(
-      Map<String, Object> fields, String esField) {
-    return getMappedSetValue(fields, esField, Country::fromIsoCode);
-  }
-
-  private static Optional<Set<GbifRegion>> getRegionSetValue(
-      Map<String, Object> fields, String esField) {
-    return getMappedSetValue(fields, esField, GbifRegion::fromString);
-  }
-
-  private static Optional<LiteratureType> getLiteratureTypeValue(
-      Map<String, Object> fields, String esField) {
-    return getValue(
-        fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureType.class));
-  }
-
-  private static Optional<Set<LiteratureRelevance>> getRelevanceSetValue(
-      Map<String, Object> fields, String esField) {
-    return getMappedSetValue(
-        fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureRelevance.class));
-  }
-
-  private static Optional<Set<LiteratureTopic>> getTopicSetValue(
-      Map<String, Object> fields, String esField) {
-    return getMappedSetValue(
-        fields, esField, value -> VocabularyUtils.lookupEnum(value, LiteratureTopic.class));
-  }
-
-  private static Optional<List<Map<String, Object>>> getObjectsListValue(
-      Map<String, Object> fields, String esField) {
-    return Optional.ofNullable(fields.get(esField))
-        .map(v -> (List<Map<String, Object>>) v)
-        .filter(v -> !v.isEmpty());
-  }
-
-  private static <T> Optional<T> getValue(
-      Map<String, Object> fields, String esField, Function<String, T> mapper) {
-    String fieldName = esField;
-    if (IS_NESTED.test(esField)) {
-      // take all paths till the field name
-      String[] paths = esField.split("\\.");
-      for (int i = 0; i < paths.length - 1 && fields.containsKey(paths[i]); i++) {
-        // update the fields with the current path
-        fields = (Map<String, Object>) fields.get(paths[i]);
+  private void handleHighlighting(
+      LiteratureSearchResult result, Hit<Object> hit, JsonNode source) {
+    if (hit.highlight() != null) {
+      if (hit.highlight().containsKey("title") && !hit.highlight().get("title").isEmpty()) {
+        result.setTitle(hit.highlight().get("title").get(0));
+      } else {
+        extractStringField(source, "title").ifPresent(result::setTitle);
       }
-      // the last path is the field name
-      fieldName = paths[paths.length - 1];
+      if (hit.highlight().containsKey("abstract") && !hit.highlight().get("abstract").isEmpty()) {
+        result.setAbstract(hit.highlight().get("abstract").get(0));
+      } else {
+        extractStringField(source, "abstract").ifPresent(result::setAbstract);
+      }
+    } else {
+      extractStringField(source, "title").ifPresent(result::setTitle);
+      extractStringField(source, "abstract").ifPresent(result::setAbstract);
     }
-
-    return extractValue(fields, fieldName, mapper);
   }
 
-  private static <T> Optional<T> extractValue(
-      Map<String, Object> fields, String fieldName, Function<String, T> mapper) {
-    return Optional.ofNullable(fields.get(fieldName))
-        .map(String::valueOf)
-        .filter(v -> !v.isEmpty())
-        .map(
-            v -> {
-              try {
-                return mapper.apply(v);
-              } catch (Exception ex) {
-                LOG.error("Error extracting field {} with value {}", fieldName, v);
-                return null;
-              }
-            });
+  private <T> Optional<T> extractValue(
+      JsonNode source, String fieldName, java.util.function.Function<JsonNode, T> mapper) {
+    JsonNode field = source.get(fieldName);
+    if (field != null && !field.isNull()) {
+      try {
+        return Optional.of(mapper.apply(field));
+      } catch (Exception e) {
+        log.error("Error extracting/mapping field '{}' from source: {}", fieldName, source, e);
+        return Optional.empty();
+      }
+    }
+    return Optional.empty();
+  }
+
+  private Optional<String> extractStringField(JsonNode source, String fieldName) {
+    return extractValue(source, fieldName, JsonNode::asText);
+  }
+
+  private Optional<Integer> extractIntegerField(JsonNode source, String fieldName) {
+    return extractValue(source, fieldName, JsonNode::asInt);
+  }
+
+  private Optional<Boolean> extractBooleanField(JsonNode source, String fieldName) {
+    return extractValue(source, fieldName, JsonNode::asBoolean);
+  }
+
+  private Optional<Date> extractDateField(JsonNode source, String fieldName) {
+    return extractValue(
+        source,
+        fieldName,
+        node -> {
+          long epochMilli = node.asLong();
+          return Date.from(java.time.Instant.ofEpochMilli(epochMilli));
+        });
+  }
+
+  private <T> Optional<List<T>> extractList(
+      JsonNode source,
+      String fieldName,
+      Class<T> clazz,
+      java.util.function.Function<JsonNode, T> mapper) {
+    JsonNode field = source.get(fieldName);
+    if (field != null && field.isArray()) {
+      List<T> values = new java.util.ArrayList<>();
+      field.forEach(
+          item -> {
+            try {
+              values.add(mapper.apply(item));
+            } catch (Exception e) {
+              log.error("Error parsing item in list '{}': {}", fieldName, item, e);
+            }
+          });
+      return values.isEmpty() ? Optional.empty() : Optional.of(values);
+    }
+    return Optional.empty();
+  }
+
+  private Optional<List<String>> extractStringList(JsonNode source, String fieldName) {
+    return extractList(source, fieldName, String.class, JsonNode::asText);
+  }
+
+  private Optional<List<Integer>> extractIntegerList(JsonNode source, String fieldName) {
+    return extractList(source, fieldName, Integer.class, JsonNode::asInt);
+  }
+
+  private Optional<List<Long>> extractLongList(JsonNode source, String fieldName) {
+    return extractList(source, fieldName, Long.class, JsonNode::asLong);
+  }
+
+  private <T extends Enum<T>> Optional<Set<T>> extractSet(
+      JsonNode source,
+      String fieldName,
+      Class<T> enumClass,
+      java.util.function.Function<String, T> fromString) {
+    JsonNode field = source.get(fieldName);
+    if (field != null && field.isArray()) {
+      Set<T> values = new java.util.HashSet<>();
+      field.forEach(
+          item -> {
+            try {
+              values.add(fromString.apply(item.asText()));
+            } catch (Exception e) {
+              log.error("Error parsing enum for item in list '{}': {}", fieldName, item, e);
+            }
+          });
+      return values.isEmpty() ? Optional.empty() : Optional.of(values);
+    }
+    return Optional.empty();
   }
 }

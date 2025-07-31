@@ -17,9 +17,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.apache.http.HttpHost;
-import org.elasticsearch.client.NodeSelector;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultSingletonBeanRegistry;
 import org.springframework.context.ApplicationContext;
@@ -27,39 +25,51 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import lombok.extern.slf4j.Slf4j;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
-@Slf4j
 public class EsConfig {
+
+  private static final Logger log = LoggerFactory.getLogger(EsConfig.class);
 
   @Autowired private ApplicationContext applicationContext;
 
   /**
-   * Re-creates the instance of the RestHighLevelClient.
+   * Re-creates the instance of the ElasticsearchClient.
    */
-  public RestHighLevelClient reCreateRestHighLevelClient() {
-    RestHighLevelClient restHighLevelClient =
-        applicationContext.getBean("restHighLevelClient", RestHighLevelClient.class);
-    if (!restHighLevelClient.getLowLevelClient().isRunning()) {
-      log.warn("Recreating Elasticsearch RestHighLevelClient");
+  public ElasticsearchClient reCreateElasticsearchClient() {
+    ElasticsearchClient elasticsearchClient =
+        applicationContext.getBean("elasticsearchClient", ElasticsearchClient.class);
+
+    // Check if the underlying transport is still healthy
+    try {
+      elasticsearchClient.ping();
+      return elasticsearchClient;
+    } catch (Exception e) {
+      log.warn("Recreating Elasticsearch client due to unhealthy connection", e);
       DefaultSingletonBeanRegistry registry =
           (DefaultSingletonBeanRegistry) applicationContext.getAutowireCapableBeanFactory();
-      registry.destroySingleton("restHighLevelClient");
+      registry.destroySingleton("elasticsearchClient");
       registry.registerSingleton(
-          "restHighLevelClient",
-          restHighLevelClient(applicationContext.getBean(EsClientConfigProperties.class)));
+          "elasticsearchClient",
+          elasticsearchClient(applicationContext.getBean(EsClientConfigProperties.class)));
+      return applicationContext.getBean("elasticsearchClient", ElasticsearchClient.class);
     }
-    return restHighLevelClient;
   }
 
-  @Bean("restHighLevelClient")
+  @Bean("elasticsearchClient")
   @Primary
-  public RestHighLevelClient restHighLevelClient(EsClientConfigProperties esProperties) {
+  public ElasticsearchClient elasticsearchClient(EsClientConfigProperties esProperties) {
     return provideEsClient(esProperties);
   }
 
-  public static RestHighLevelClient provideEsClient(EsClientConfigProperties esProperties) {
+  public static ElasticsearchClient provideEsClient(EsClientConfigProperties esProperties) {
     String[] hostsUrl = esProperties.getHosts().toArray(new String[0]);
     HttpHost[] hosts = new HttpHost[hostsUrl.length];
     int i = 0;
@@ -73,14 +83,21 @@ public class EsConfig {
       }
     }
 
-    return new RestHighLevelClient(
-        RestClient.builder(hosts)
-            .setRequestConfigCallback(
-                requestConfigBuilder ->
-                    requestConfigBuilder
-                        .setConnectTimeout(esProperties.getConnectionTimeOut())
-                        .setSocketTimeout(esProperties.getSocketTimeOut())
-                        .setConnectionRequestTimeout(esProperties.getConnectionRequestTimeOut()))
-            .setNodeSelector(NodeSelector.SKIP_DEDICATED_MASTERS));
+    // Create the low-level REST client
+    RestClient restClient = RestClient.builder(hosts)
+        .setRequestConfigCallback(
+            requestConfigBuilder ->
+                requestConfigBuilder
+                    .setConnectTimeout(esProperties.getConnectionTimeOut())
+                    .setSocketTimeout(esProperties.getSocketTimeOut())
+                    .setConnectionRequestTimeout(esProperties.getConnectionRequestTimeOut()))
+        .build();
+
+    // Create the transport with a Jackson mapper
+    ElasticsearchTransport transport = new RestClientTransport(
+        restClient, new JacksonJsonpMapper());
+
+    // Create and return the API client
+    return new ElasticsearchClient(transport);
   }
 }

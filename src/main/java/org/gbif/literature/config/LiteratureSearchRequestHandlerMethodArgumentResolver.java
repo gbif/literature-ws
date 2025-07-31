@@ -42,6 +42,21 @@ public class LiteratureSearchRequestHandlerMethodArgumentResolver
       ModelAndViewContainer mavContainer,
       NativeWebRequest webRequest,
       WebDataBinderFactory binderFactory) {
-    return getValue(webRequest);
+    
+    // Get the base search request from the parent provider
+    // Standard facet parameters (multiSelectFacets, facetLimit, facetOffset) are automatically handled
+    LiteratureSearchRequest searchRequest = super.getValue(webRequest);
+    
+    // Manually handle facetMinCount - this ES-specific parameter is not handled by parent provider
+    String facetMinCountStr = webRequest.getParameter("facetMinCount");
+    if (facetMinCountStr != null) {
+      try {
+        searchRequest.setFacetMinCount(Integer.parseInt(facetMinCountStr));
+      } catch (NumberFormatException e) {
+        // Ignore invalid values
+      }
+    }
+    
+    return searchRequest;
   }
 }

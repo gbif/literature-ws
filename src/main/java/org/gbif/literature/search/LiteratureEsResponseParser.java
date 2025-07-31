@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class LiteratureEsResponseParser
     extends EsResponseParser<LiteratureSearchResult, LiteratureSearchParameter> {
 
-  private LiteratureEsResponseParser(
+  public LiteratureEsResponseParser(
       SearchResultConverter<LiteratureSearchResult> searchResultConverter,
       EsFieldMapper<LiteratureSearchParameter> esFieldMapper) {
     super(searchResultConverter, esFieldMapper);

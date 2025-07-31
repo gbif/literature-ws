@@ -15,17 +15,18 @@ package org.gbif.literature.search;
 
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
+/**
+ * Literature-specific search request builder with special handling for nested fields like DOI.
+ */
 @Component
 public class LiteratureEsSearchRequestBuilder
     extends EsSearchRequestBuilder<LiteratureSearchParameter> {
@@ -34,20 +35,46 @@ public class LiteratureEsSearchRequestBuilder
     super(esFieldMapper);
   }
 
+  /**
+   * Override to provide special handling for DOI nested queries.
+   */
   @Override
-  protected void buildSpecificQuery(
-      BoolQueryBuilder queryBuilder, Map<LiteratureSearchParameter, Set<String>> params) {
-    if (params != null && !params.isEmpty()) {
-      Set<String> values = params.get(LiteratureSearchParameter.DOI);
-      if (values != null && !values.isEmpty()) {
-        queryBuilder.must(
-            nestedQuery(
-                "identifiers",
-                termsQuery(
-                    "identifiers.doi",
-                    values.stream().map(String::toLowerCase).collect(Collectors.toSet())),
-                ScoreMode.None));
-      }
+  protected List<Query> buildTermQuery(Collection<String> values, LiteratureSearchParameter param, String esField) {
+    // Special handling for DOI - nested query required
+    if (param == LiteratureSearchParameter.DOI && esField.equals("identifiers.doi")) {
+      return buildDoiNestedQuery(values);
     }
+
+    // Use parent implementation for all other fields
+    return super.buildTermQuery(values, param, esField);
+  }
+
+  /**
+   * Builds a nested query specifically for DOI searches.
+   * DOI values are converted to lowercase for case-insensitive matching.
+   */
+  private List<Query> buildDoiNestedQuery(Collection<String> values) {
+    List<Query> queries = new ArrayList<>();
+
+    if (values != null && !values.isEmpty()) {
+      // Convert DOI values to lowercase for case-insensitive search
+      List<FieldValue> doiValues = values.stream()
+          .map(String::toLowerCase)
+          .map(FieldValue::of)
+          .toList();
+
+      // Build nested query for identifiers.doi
+      Query nestedQuery = Query.of(q -> q.nested(n -> n
+          .path("identifiers")
+          .query(Query.of(nq -> nq.terms(t -> t
+              .field("identifiers.doi")
+              .terms(ts -> ts.value(doiValues))
+          )))
+      ));
+
+      queries.add(nestedQuery);
+    }
+
+    return queries;
   }
 }
