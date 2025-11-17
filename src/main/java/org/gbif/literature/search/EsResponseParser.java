@@ -16,115 +16,146 @@ package org.gbif.literature.search;
 import org.gbif.api.model.common.search.Facet;
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchParameter;
-import org.gbif.api.model.common.search.SearchRequest;
 import org.gbif.api.model.common.search.SearchResponse;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
 
-import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
 
+/**
+ * Converts ES search responses into SearchResponse objects.
+ */
 public class EsResponseParser<T, P extends SearchParameter> {
 
-  private final EsFieldMapper<P> fieldParameterMapper;
   private final SearchResultConverter<T> searchResultConverter;
+  private final EsFieldMapper<P> esFieldMapper;
 
-  public EsResponseParser(
-      SearchResultConverter<T> searchResultConverter, EsFieldMapper<P> fieldParameterMapper) {
+  public EsResponseParser(SearchResultConverter<T> searchResultConverter, EsFieldMapper<P> esFieldMapper) {
     this.searchResultConverter = searchResultConverter;
-    this.fieldParameterMapper = fieldParameterMapper;
+    this.esFieldMapper = esFieldMapper;
   }
 
-  public Optional<T> buildGetResponse(org.elasticsearch.action.search.SearchResponse esResponse) {
-    if (esResponse.getHits() == null
-        || esResponse.getHits().getHits() == null
-        || esResponse.getHits().getHits().length == 0) {
-      return Optional.empty();
-    }
-
-    return Optional.of(searchResultConverter.toSearchResult(esResponse.getHits().getAt(0)));
-  }
-
+  /**
+   * Translates the ES response into the common search response format.
+   */
   public SearchResponse<T, P> buildSearchResponse(
-      org.elasticsearch.action.search.SearchResponse esResponse, SearchRequest<P> request) {
-    return buildSearchResponse(esResponse, request, searchResultConverter::toSearchResult);
-  }
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse,
+      FacetedSearchRequest<P> searchRequest) {
 
-  public <R> SearchResponse<R, P> buildSearchResponse(
-      org.elasticsearch.action.search.SearchResponse esResponse,
-      SearchRequest<P> request,
-      Function<SearchHit, R> mapper) {
-    SearchResponse<R, P> response = new SearchResponse<>(request);
-    response.setCount(esResponse.getHits().getTotalHits().value);
-    parseHits(esResponse, mapper).ifPresent(response::setResults);
-    if (request instanceof FacetedSearchRequest) {
-      parseFacets(esResponse, (FacetedSearchRequest<P>) request).ifPresent(response::setFacets);
+    SearchResponse<T, P> response = new SearchResponse<>(searchRequest);
+    response.setResults(extractResults(esResponse));
+    response.setCount(esResponse.hits().total().value());
+
+    if (searchRequest.getFacets() != null && !searchRequest.getFacets().isEmpty() &&
+        esResponse.aggregations() != null && !esResponse.aggregations().isEmpty()) {
+      List<Facet<P>> facets = extractFacets(esResponse.aggregations(), searchRequest);
+      response.setFacets(facets);
     }
 
     return response;
   }
 
-  private <R> Optional<List<R>> parseHits(
-      org.elasticsearch.action.search.SearchResponse esResponse, Function<SearchHit, R> mapper) {
-    if (esResponse.getHits() == null
-        || esResponse.getHits().getHits() == null
-        || esResponse.getHits().getHits().length == 0) {
-      return Optional.empty();
-    }
-
-    return Optional.of(
-        Stream.of(esResponse.getHits().getHits()).map(mapper).collect(Collectors.toList()));
+  /**
+   * Builds a response for get-by-id requests.
+   */
+  public Optional<T> buildGetResponse(co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {
+    List<T> results = extractResults(esResponse);
+    return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
   }
 
-  private Optional<List<Facet<P>>> parseFacets(
-      org.elasticsearch.action.search.SearchResponse esResponse, FacetedSearchRequest<P> request) {
-    return Optional.ofNullable(esResponse.getAggregations())
-        .map(
-            aggregations ->
-                aggregations.asList().stream()
-                    .map(
-                        aggs -> {
-                          // get buckets
-                          List<? extends Terms.Bucket> buckets = getBuckets(aggs);
-
-                          // get facet of the agg
-                          P facet = fieldParameterMapper.get(aggs.getName());
-
-                          // check for paging in facets
-                          long facetOffset = extractFacetOffset(request, facet);
-                          long facetLimit = extractFacetLimit(request, facet);
-
-                          List<Facet.Count> counts =
-                              buckets.stream()
-                                  .skip(facetOffset)
-                                  .limit(facetOffset + facetLimit)
-                                  .map(b -> new Facet.Count(b.getKeyAsString(), b.getDocCount()))
-                                  .collect(Collectors.toList());
-
-                          return new Facet<>(facet, counts);
-                        })
-                    .collect(Collectors.toList()));
+  /**
+   * Extracts the results from search hits.
+   */
+  private List<T> extractResults(co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {
+    return esResponse.hits().hits().stream()
+        .map(searchResultConverter::toResult)
+        .toList();
   }
 
-  private List<? extends Terms.Bucket> getBuckets(Aggregation aggregation) {
-    if (aggregation instanceof Terms) {
-      return ((Terms) aggregation).getBuckets();
-    } else if (aggregation instanceof Filter) {
-      return ((Filter) aggregation)
-          .getAggregations().asList().stream()
-              .flatMap(agg -> ((Terms) agg).getBuckets().stream())
-              .collect(Collectors.toList());
-    } else {
-      throw new IllegalArgumentException(aggregation.getClass() + " aggregation not supported");
+  /**
+   * Extracts facets from ES aggregations.
+   */
+  private List<Facet<P>> extractFacets(Map<String, Aggregate> aggregations, FacetedSearchRequest<P> searchRequest) {
+    return searchRequest.getFacets().stream()
+        .map(facetParam -> {
+          String esField = esFieldMapper.get(facetParam);
+          if (esField == null) {
+            return new Facet<>(facetParam);
+          }
+
+          Aggregate agg = aggregations.get(esField);
+
+          if (agg != null) {
+            return extractFacet(agg, facetParam, searchRequest);
+          }
+          return new Facet<>(facetParam);
+        })
+        .toList();
+  }
+
+  /**
+   * Extracts a single facet from an ES aggregate.
+   */
+  private Facet<P> extractFacet(Aggregate aggregate, P facetParam, FacetedSearchRequest<P> searchRequest) {
+    List<Facet.Count> counts = null;
+
+    // Handle filter aggregations, which contain a nested "inner" terms aggregation
+    // for multi-select facet logic.
+    if (aggregate.isFilter()) {
+      FilterAggregate filterAgg = aggregate.filter();
+      if (filterAgg.aggregations() != null && filterAgg.aggregations().containsKey("inner")) {
+        Aggregate innerAgg = filterAgg.aggregations().get("inner");
+        if (innerAgg.isSterms()) {
+          counts = extractStringTermsIntoCounts(innerAgg.sterms(), facetParam, searchRequest);
+        } else if (innerAgg.isLterms()) {
+          counts = extractLongTermsIntoCounts(innerAgg.lterms(), facetParam, searchRequest);
+        }
+      }
     }
+    // Handle direct terms aggregations
+    else if (aggregate.isSterms()) {
+      counts = extractStringTermsIntoCounts(aggregate.sterms(), facetParam, searchRequest);
+    }
+    // Handle long terms aggregations (for numeric fields like 'year')
+    else if (aggregate.isLterms()) {
+      counts = extractLongTermsIntoCounts(aggregate.lterms(), facetParam, searchRequest);
+    }
+
+    return counts != null ? new Facet<>(facetParam, counts) : new Facet<>(facetParam);
+  }
+
+  /**
+   * Extracts terms from a StringTermsAggregate into a list of Facet.Count objects.
+   */
+  private List<Facet.Count> extractStringTermsIntoCounts(StringTermsAggregate termsAgg, P facetParam, FacetedSearchRequest<P> searchRequest) {
+    long offset = extractFacetOffset(searchRequest, facetParam);
+    return termsAgg.buckets().array().stream()
+        .skip(offset)
+        .map(bucket -> {
+          String key = bucket.key().stringValue();
+          return new Facet.Count(key, bucket.docCount());
+        })
+        .toList();
+  }
+
+  /**
+   * Extracts terms from a LongTermsAggregate (for numeric fields) into a list of Facet.Count objects.
+   */
+  private List<Facet.Count> extractLongTermsIntoCounts(LongTermsAggregate termsAgg, P facetParam, FacetedSearchRequest<P> searchRequest) {
+    long offset = extractFacetOffset(searchRequest, facetParam);
+    return termsAgg.buckets().array().stream()
+        .skip(offset)
+        .map(bucket -> {
+          String key = String.valueOf(bucket.key());
+          return new Facet.Count(key, bucket.docCount());
+        })
+        .toList();
   }
 }

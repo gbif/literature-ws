@@ -13,7 +13,6 @@
  */
 package org.gbif.literature.search;
 
-import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
@@ -23,21 +22,16 @@ import org.gbif.literature.config.EsConfig;
 import java.io.IOException;
 import java.util.Optional;
 
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 
 @Service
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
-  @Value("${literature.bufferLimitBytesExport}")
-  private int bufferLimitBytesExport;
-
-  private RestHighLevelClient restHighLevelClient;
-  private final LiteratureEsResponseParser esResponseParser;
+  private ElasticsearchClient elasticsearchClient;
+  private final EsResponseParser<LiteratureSearchResult, LiteratureSearchParameter> esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
   private final String index;
   private final int maxResultWindow;
@@ -46,33 +40,39 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
   public LiteratureSearchServiceEs(
       EsClientConfigProperties esClientConfigProperties,
-      RestHighLevelClient restHighLevelClient,
-      LiteratureEsResponseParser esResponseParser,
+      ElasticsearchClient elasticsearchClient,
+      SearchResultConverter<LiteratureSearchResult> searchResultConverter,
       EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder,
+      EsFieldMapper<LiteratureSearchParameter> esFieldMapper,
       EsConfig esConfig) {
     this.index = esClientConfigProperties.getIndex();
     this.maxResultWindow = esClientConfigProperties.getMaxResultWindow();
-    this.restHighLevelClient = restHighLevelClient;
-    this.esResponseParser = esResponseParser;
+    this.elasticsearchClient = elasticsearchClient;
+    this.esResponseParser = new LiteratureEsResponseParser(searchResultConverter, esFieldMapper);
     this.esSearchRequestBuilder = esSearchRequestBuilder;
     this.esConfig = esConfig;
   }
 
-  public RestHighLevelClient restHighLevelClient() {
-    if (!restHighLevelClient.getLowLevelClient().isRunning()) {
-      restHighLevelClient = esConfig.reCreateRestHighLevelClient();
+  public ElasticsearchClient elasticsearchClient() {
+    try {
+      // Try to ping to check if client is healthy
+      elasticsearchClient.ping();
+      return elasticsearchClient;
+    } catch (Exception e) {
+      // Recreate client if unhealthy
+      elasticsearchClient = esConfig.reCreateElasticsearchClient();
+      return elasticsearchClient;
     }
-    return restHighLevelClient;
   }
 
   @Override
-  public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> search(
+  public org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> search(
       LiteratureSearchRequest literatureSearchRequest) {
-    return searchInternal(literatureSearchRequest, RequestOptions.DEFAULT);
+    return searchInternal(literatureSearchRequest);
   }
 
-  private SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> searchInternal(
-      LiteratureSearchRequest literatureSearchRequest, RequestOptions requestOptions) {
+  private org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> searchInternal(
+      LiteratureSearchRequest literatureSearchRequest) {
     int limit = literatureSearchRequest.getLimit();
     long offset = literatureSearchRequest.getOffset();
     boolean offsetExceeded = false;
@@ -84,10 +84,11 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
     try {
       SearchRequest searchRequest =
-          esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, true, index);
-      SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
-          esResponseParser.buildSearchResponse(
-              restHighLevelClient().search(searchRequest, requestOptions), literatureSearchRequest);
+          esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, index);
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient().search(searchRequest, Object.class);
+
+      org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
+          esResponseParser.buildSearchResponse(esResponse, literatureSearchRequest);
 
       if (offsetExceeded) {
         response.setOffset(offset);
@@ -103,20 +104,18 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   public Optional<LiteratureSearchResult> get(Object identifier) {
     SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetRequest(identifier, index);
     try {
-      return esResponseParser.buildGetResponse(
-          restHighLevelClient().search(getByIdRequest, RequestOptions.DEFAULT));
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient().search(getByIdRequest, Object.class);
+      return esResponseParser.buildGetResponse(esResponse);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
+  public org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
       LiteratureSearchRequest literatureSearchRequest) {
-    RequestOptions.Builder builder = RequestOptions.DEFAULT.toBuilder();
-    builder.setHttpAsyncResponseConsumerFactory(
-        new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(
-            bufferLimitBytesExport));
-    return searchInternal(literatureSearchRequest, builder.build());
+    // For export searches, we use the same internal search method
+    // The new client handles buffering internally
+    return searchInternal(literatureSearchRequest);
   }
 }

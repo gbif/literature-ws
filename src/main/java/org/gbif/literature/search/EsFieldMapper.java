@@ -15,9 +15,8 @@ package org.gbif.literature.search;
 
 import org.gbif.api.model.common.search.SearchParameter;
 
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.sort.SortBuilder;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 public interface EsFieldMapper<P extends SearchParameter> {
 
@@ -29,13 +28,11 @@ public interface EsFieldMapper<P extends SearchParameter> {
 
   String[] excludeFields();
 
-  SortBuilder<? extends SortBuilder>[] sorts();
+  SortOptions[] sorts();
 
   boolean isDateField(String esFieldName);
 
-  default QueryBuilder fullTextQuery(String q) {
-    return QueryBuilders.matchQuery("all", q);
-  }
+  Query fullTextQuery(String q);
 
   default String[] getMappedFields() {
     return new String[0];

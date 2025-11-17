@@ -13,11 +13,6 @@
  */
 package org.gbif.literature;
 
-import org.gbif.ws.server.filter.AppIdentityFilter;
-import org.gbif.ws.server.filter.HttpServletRequestWrapperFilter;
-import org.gbif.ws.server.filter.IdentityFilter;
-import org.gbif.ws.server.filter.RequestHeaderParamUpdateFilter;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -28,15 +23,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class LiteratureApplicationTests {
   @MockBean UserDetailsService userDetailsService;
   @MockBean PasswordEncoder passwordEncoder;
-
-  @MockBean IdentityFilter identityFilter;
-
-  @MockBean AppIdentityFilter appIdentityFilter;
-
-  @MockBean HttpServletRequestWrapperFilter httpServletRequestWrapperFilter;
-
-  @MockBean RequestHeaderParamUpdateFilter requestHeaderParamUpdateFilter;
-
   @Test
   void contextLoads() {}
 }

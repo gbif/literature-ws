@@ -31,7 +31,6 @@ import org.gbif.literature.export.LiteraturePager;
 import org.gbif.literature.search.LiteratureSearchService;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.annotation.Inherited;
@@ -403,14 +402,7 @@ public class LiteratureResource {
                     new LiteraturePager(
                         searchService,
                         searchRequest,
-                        EXPORT_PAGE_LIMIT,
-                        response -> {
-                          try {
-                            writer.flush();
-                          } catch (IOException e) {
-                            throw new RuntimeException(e);
-                          }
-                        }),
+                        EXPORT_PAGE_LIMIT),
                     format)
                 .export(writer);
           }

@@ -13,6 +13,8 @@
  */
 package org.gbif.literature.search;
 
+import co.elastic.clients.elasticsearch._types.SortOptions;
+
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -20,6 +22,7 @@ import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.Language;
+import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,34 +30,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
-import org.elasticsearch.search.sort.SortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.gbif.api.util.SearchTypeValidator.isDateRange;
-import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
@@ -62,214 +48,261 @@ import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
 
-public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
+/**
+ * Enhanced Elasticsearch search request builder for Elasticsearch 9.
+ * Supports multi-select facets, nested field queries, and proper date/range handling.
+ */
+public class EsSearchRequestBuilder<P extends SearchParameter> {
 
   private static final int MAX_SIZE_TERMS_AGGS = 1200000;
   private static final String PRE_HL_TAG = "<em class=\"gbifHl\">";
   private static final String POST_HL_TAG = "</em>";
 
-  private final EsFieldMapper<P> esFieldMapper;
+  // Nested fields that require special query handling
+  private static final Set<String> NESTED_FIELDS = Set.of("authors", "editors", "translators", "identifiers");
 
-  private final HighlightBuilder highlightBuilder =
-      new HighlightBuilder()
-          .forceSource(true)
-          .preTags(PRE_HL_TAG)
-          .postTags(POST_HL_TAG)
-          .encoder("html")
-          .highlighterType("unified")
-          .requireFieldMatch(false)
-          .numOfFragments(0);
+  private final EsFieldMapper<P> esFieldMapper;
 
   public EsSearchRequestBuilder(EsFieldMapper<P> esFieldMapper) {
     this.esFieldMapper = esFieldMapper;
   }
 
-  public SearchRequest buildSearchRequest(
-      FacetedSearchRequest<P> searchRequest, boolean facetsEnabled, String index) {
+  /**
+   * Builds the main search request.
+   */
+  public SearchRequest buildSearchRequest(FacetedSearchRequest<P> searchRequest, String index) {
+    return buildRequest(searchRequest, index);
+  }
 
-    SearchRequest esSearchRequest = new SearchRequest();
-    esSearchRequest.indices(index);
+  /**
+   * Main search request builder with comprehensive filtering and aggregation support.
+   */
+  private SearchRequest buildRequest(FacetedSearchRequest<P> searchRequest, String index) {
+    SearchRequest.Builder builder = new SearchRequest.Builder();
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.trackTotalHits(true);
-    esSearchRequest.source(searchSourceBuilder);
-    searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
+    // Basic request setup
+    configureBasicRequest(builder, searchRequest, index);
 
-    // size and offset
-    searchSourceBuilder.size(searchRequest.getLimit());
-    searchSourceBuilder.from((int) searchRequest.getOffset());
-
-    // sort
-    if (Strings.isNullOrEmpty(searchRequest.getQ())) {
-      for (SortBuilder<?> sb : esFieldMapper.sorts()) {
-        searchSourceBuilder.sort(sb);
-      }
-    } else {
-      searchSourceBuilder.sort(SortBuilders.scoreSort());
-      if (searchRequest.isHighlight()) {
-        searchSourceBuilder.highlighter(highlightBuilder);
-      }
-    }
-
-    // group params
+    // Setup filtering strategy for multi-select facets
     GroupedParams<P> groupedParams = groupParameters(searchRequest);
 
-    // add query
-    if (SearchConstants.QUERY_WILDCARD.equals(searchRequest.getQ())) {
-      // search all
-      searchSourceBuilder.query(matchAllQuery());
+    // Build the main query
+    BoolQuery mainQuery = buildMainQuery(searchRequest, groupedParams);
+    builder.query(Query.of(q -> q.bool(mainQuery)));
+
+    // Add post-filter for facet isolation
+    addPostFilter(builder, groupedParams);
+
+    // Configure sorting
+    configureSorting(builder, searchRequest);
+
+    // Add highlighting if requested
+    configureHighlighting(builder, searchRequest);
+
+    // Add aggregations with multi-select support
+    addAggregations(builder, searchRequest, groupedParams);
+
+    return builder.build();
+  }
+
+  /**
+   * Configures basic request parameters.
+   */
+  private void configureBasicRequest(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest, String index) {
+    builder.index(index);
+    builder.size(searchRequest.getLimit());
+    builder.from((int) searchRequest.getOffset());
+    builder.trackTotalHits(t -> t.enabled(true));
+
+    // Source filtering
+    builder.source(s -> s.filter(f -> f
+        .includes(List.of(esFieldMapper.getMappedFields()))
+        .excludes(List.of(esFieldMapper.excludeFields()))
+    ));
+  }
+
+  /**
+   * Builds the main bool query combining text search and filters.
+   */
+  private BoolQuery buildMainQuery(FacetedSearchRequest<P> searchRequest, GroupedParams<P> groupedParams) {
+    BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+
+    // Main text query (must clause)
+    addTextQuery(boolQueryBuilder, searchRequest);
+
+    // Add non-facet parameter filters
+    addQueryFilters(boolQueryBuilder, groupedParams);
+
+    return boolQueryBuilder.build();
+  }
+
+  /**
+   * Adds the main text query to the bool query.
+   */
+  private void addTextQuery(BoolQuery.Builder boolQueryBuilder, FacetedSearchRequest<P> searchRequest) {
+    if (searchRequest.getQ() == null ||
+        searchRequest.getQ().trim().isEmpty() ||
+        searchRequest.getQ().equals(SearchConstants.QUERY_WILDCARD)) {
+      boolQueryBuilder.must(q -> q.matchAll(ma -> ma));
     } else {
-      buildQuery(groupedParams.queryParams, searchRequest.getQ())
-          .ifPresent(searchSourceBuilder::query);
+      boolQueryBuilder.must(esFieldMapper.fullTextQuery(searchRequest.getQ()));
+    }
+  }
+
+  /**
+   * Adds query filters for non-facet parameters.
+   */
+  private void addQueryFilters(BoolQuery.Builder boolQueryBuilder, GroupedParams<P> groupedParams) {
+    if (groupedParams.queryParams != null && !groupedParams.queryParams.isEmpty()) {
+      List<Query> queryFilters = groupedParams.queryParams.entrySet().stream()
+          .filter(e -> esFieldMapper.get(e.getKey()) != null)
+          .flatMap(e -> buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey())).stream())
+          .toList();
+
+      if (!queryFilters.isEmpty()) {
+        boolQueryBuilder.filter(queryFilters);
+      }
+    }
+  }
+
+  /**
+   * Adds post-filter for facet parameter isolation.
+   */
+  private void addPostFilter(SearchRequest.Builder builder, GroupedParams<P> groupedParams) {
+    if (groupedParams.postFilterParams != null && !groupedParams.postFilterParams.isEmpty()) {
+      List<Query> postFilterQueries = groupedParams.postFilterParams.entrySet().stream()
+          .flatMap(e -> buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey())).stream())
+          .toList();
+
+      if (!postFilterQueries.isEmpty()) {
+        builder.postFilter(q -> q.bool(b -> b.filter(postFilterQueries)));
+      }
+    }
+  }
+
+  /**
+   * Configures sorting based on query type.
+   */
+  private void configureSorting(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest) {
+    if (searchRequest.getQ() == null ||
+        searchRequest.getQ().trim().isEmpty() ||
+        searchRequest.getQ().equals(SearchConstants.QUERY_WILDCARD)) {
+      // Default sorting for non-text queries
+      for (SortOptions sort : esFieldMapper.sorts()) {
+        builder.sort(sort);
+      }
+    } else {
+      // Relevance sorting for text queries
+      builder.sort(s -> s.score(sc -> sc.order(SortOrder.Desc)));
+    }
+  }
+
+  /**
+   * Configures highlighting if requested.
+   */
+  private void configureHighlighting(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest) {
+    if (searchRequest.isHighlight()) {
+      builder.highlight(h -> h
+          .numberOfFragments(0)
+          .preTags(PRE_HL_TAG)
+          .postTags(POST_HL_TAG)
+          .fields("title", f -> f)
+          .fields("abstract", f -> f)
+      );
+    }
+  }
+
+  /**
+   * Adds aggregations with multi-select facet support.
+   */
+  private void addAggregations(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest, GroupedParams<P> groupedParams) {
+    if (searchRequest.getFacets() == null || searchRequest.getFacets().isEmpty()) {
+      return;
     }
 
-    // add aggs
-    buildAggs(searchRequest, groupedParams.postFilterParams, facetsEnabled)
-        .ifPresent(aggsList -> aggsList.forEach(searchSourceBuilder::aggregation));
+    // Create aggregations for each requested facet
+    for (P facetParam : searchRequest.getFacets()) {
+      String esField = esFieldMapper.get(facetParam);
+      if (esField == null) continue;
 
-    // post-filter
-    buildPostFilter(groupedParams.postFilterParams).ifPresent(searchSourceBuilder::postFilter);
-
-    return esSearchRequest;
-  }
-
-  public SearchRequest buildGetRequest(Object identifier, String index) {
-    SearchRequest esSearchRequest = new SearchRequest();
-    esSearchRequest.indices(index);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    esSearchRequest.source(searchSourceBuilder);
-    searchSourceBuilder.fetchSource(esFieldMapper.getMappedFields(), esFieldMapper.excludeFields());
-    searchSourceBuilder.query(matchQuery("id", identifier.toString()));
-
-    return esSearchRequest;
-  }
-
-  private Optional<QueryBuilder> buildPostFilter(Map<P, Set<String>> postFilterParams) {
-    if (postFilterParams == null || postFilterParams.isEmpty()) {
-      return Optional.empty();
+      addSingleFacetAggregation(builder, searchRequest, groupedParams, facetParam, esField);
     }
-
-    BoolQueryBuilder bool = boolQuery();
-    bool.filter()
-        .addAll(
-            postFilterParams.entrySet().stream()
-                .flatMap(
-                    e ->
-                        buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
-                            .stream())
-                .collect(Collectors.toList()));
-
-    return Optional.of(bool);
   }
 
-  private Optional<List<AggregationBuilder>> buildAggs(
-      FacetedSearchRequest<P> searchRequest,
-      Map<P, Set<String>> postFilterParams,
-      boolean facetsEnabled) {
-    if (!facetsEnabled
-        || searchRequest.getFacets() == null
-        || searchRequest.getFacets().isEmpty()) {
-      return Optional.empty();
+  /**
+   * Adds a single facet aggregation with multi-select logic.
+   */
+  private void addSingleFacetAggregation(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest,
+                                        GroupedParams<P> groupedParams, P facetParam, String esField) {
+
+    // Base terms aggregation
+    Aggregation termsAgg = createTermsAggregation(searchRequest, facetParam, esField);
+
+    // Handle multi-select facet logic
+    if (searchRequest.isFacetMultiSelect() &&
+        groupedParams.postFilterParams != null &&
+        !groupedParams.postFilterParams.isEmpty()) {
+
+      addMultiSelectFacetAggregation(builder, groupedParams, facetParam, esField, termsAgg);
+    } else {
+      builder.aggregations(esField, termsAgg);
     }
+  }
 
-    if (searchRequest.isMultiSelectFacets()
-        && postFilterParams != null
-        && !postFilterParams.isEmpty()) {
-      return Optional.of(buildFacetsMultiselect(searchRequest, postFilterParams));
+  /**
+   * Creates a terms aggregation for a facet.
+   */
+  private Aggregation createTermsAggregation(FacetedSearchRequest<P> searchRequest, P facetParam, String esField) {
+    int facetOffset = extractFacetOffset(searchRequest, facetParam);
+    int facetLimit = extractFacetLimit(searchRequest, facetParam);
+    int aggsSize = calculateAggsSize(esField, facetOffset, facetLimit);
+
+    return Aggregation.of(a -> a
+        .terms(t -> t
+            .field(esField)
+            .size(aggsSize)
+            .minDocCount(searchRequest.getFacetMinCount() != null ? searchRequest.getFacetMinCount() : 1)
+        )
+    );
+  }
+
+  /**
+   * Adds a multi-select facet aggregation with proper filter isolation.
+   */
+  private void addMultiSelectFacetAggregation(SearchRequest.Builder builder, GroupedParams<P> groupedParams,
+                                             P facetParam, String esField, Aggregation termsAgg) {
+
+    // Create filter of all other active facet filters (excluding current facet)
+    Map<P, Set<String>> otherFacetFilters = new HashMap<>(groupedParams.postFilterParams);
+    otherFacetFilters.remove(facetParam);
+
+    if (!otherFacetFilters.isEmpty()) {
+      // Build filter query for other facets
+      List<Query> filterQueries = otherFacetFilters.entrySet().stream()
+          .flatMap(e -> buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey())).stream())
+          .toList();
+
+      Query filterQuery = Query.of(q -> q.bool(b -> b.filter(filterQueries)));
+
+      // Wrap terms aggregation in filter aggregation
+      builder.aggregations(esField, agg -> agg
+          .filter(filterQuery)
+          .aggregations("inner", termsAgg)
+      );
+    } else {
+      builder.aggregations(esField, termsAgg);
     }
-
-    return Optional.of(buildFacets(searchRequest));
   }
 
-  private List<AggregationBuilder> buildFacetsMultiselect(
-      FacetedSearchRequest<P> searchRequest, Map<P, Set<String>> postFilterParams) {
-
-    if (searchRequest.getFacets().size() == 1) {
-      // same case as normal facets
-      return buildFacets(searchRequest);
-    }
-
-    return searchRequest.getFacets().stream()
-        .filter(p -> esFieldMapper.get(p) != null)
-        .map(
-            facetParam -> {
-              // build filter aggs
-              BoolQueryBuilder bool = boolQuery();
-              bool.filter()
-                  .addAll(
-                      postFilterParams.entrySet().stream()
-                          .filter(entry -> entry.getKey() != facetParam)
-                          .flatMap(
-                              e ->
-                                  buildTermQuery(
-                                      e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
-                                      .stream())
-                          .collect(Collectors.toList()));
-
-              // add filter to the aggs
-              String esField = esFieldMapper.get(facetParam);
-              FilterAggregationBuilder filterAggs = AggregationBuilders.filter(esField, bool);
-
-              // build terms aggs and add it to the filter aggs
-              TermsAggregationBuilder termsAggs =
-                  buildTermsAggs(
-                      "filtered_" + esField,
-                      esField,
-                      extractFacetOffset(searchRequest, facetParam),
-                      extractFacetLimit(searchRequest, facetParam),
-                      searchRequest.getFacetMinCount());
-              filterAggs.subAggregation(termsAggs);
-
-              return filterAggs;
-            })
-        .collect(Collectors.toList());
-  }
-
-  private List<AggregationBuilder> buildFacets(FacetedSearchRequest<P> searchRequest) {
-    return searchRequest.getFacets().stream()
-        .filter(p -> esFieldMapper.get(p) != null)
-        .map(
-            facetParam -> {
-              String esField = esFieldMapper.get(facetParam);
-              return buildTermsAggs(
-                  esField,
-                  esField,
-                  extractFacetOffset(searchRequest, facetParam),
-                  extractFacetLimit(searchRequest, facetParam),
-                  searchRequest.getFacetMinCount());
-            })
-        .collect(Collectors.toList());
-  }
-
-  private TermsAggregationBuilder buildTermsAggs(
-      String aggsName, String esField, int facetOffset, int facetLimit, Integer minCount) {
-    // build aggs for the field
-    TermsAggregationBuilder termsAggsBuilder = AggregationBuilders.terms(aggsName).field(esField);
-
-    // min count
-    Optional.ofNullable(minCount).ifPresent(termsAggsBuilder::minDocCount);
-
-    // aggs size
-    int size = calculateAggsSize(esField, facetOffset, facetLimit);
-    termsAggsBuilder.size(size);
-
-    // aggs shard size
-    /*
-    termsAggsBuilder.shardSize(
-        Optional.ofNullable(esFieldMapper.getCardinality(esField))
-            .orElse(DEFAULT_SHARD_SIZE.applyAsInt(size)));
-    */
-    return termsAggsBuilder;
-  }
-
+  /**
+   * Calculates appropriate aggregation size with limits.
+   */
   private int calculateAggsSize(String esField, int facetOffset, int facetLimit) {
-    int maxCardinality =
-        Optional.ofNullable(esFieldMapper.getCardinality(esField)).orElse(Integer.MAX_VALUE);
+    int maxCardinality = esFieldMapper.getCardinality(esField) != null ?
+        esFieldMapper.getCardinality(esField) : Integer.MAX_VALUE;
 
-    // the limit is bounded by the max cardinality of the field
     int limit = Math.min(facetOffset + facetLimit, maxCardinality);
 
-    // we set a maximum limit for performance reasons
     if (limit > MAX_SIZE_TERMS_AGGS) {
       throw new IllegalArgumentException(
           "Facets paging is only supported up to " + MAX_SIZE_TERMS_AGGS + " elements");
@@ -277,110 +310,164 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
     return limit;
   }
 
-  private Optional<QueryBuilder> buildQuery(Map<P, Set<String>> params, String qParam) {
-    // create bool node
-    BoolQueryBuilder bool = boolQuery();
-
-    // adding full text search parameter
-    if (StringUtils.isNotBlank(qParam)) {
-      bool.must(esFieldMapper.fullTextQuery(qParam));
-    }
-
-    // adding specific stuff (e.g. DOI search)
-    buildSpecificQuery(bool, params);
-
-    if (params != null && !params.isEmpty()) {
-      // adding term queries to bool
-      bool.filter()
-          .addAll(
-              params.entrySet().stream()
-                  .filter(e -> Objects.nonNull(esFieldMapper.get(e.getKey())))
-                  .flatMap(
-                      e ->
-                          buildTermQuery(e.getValue(), e.getKey(), esFieldMapper.get(e.getKey()))
-                              .stream())
-                  .collect(Collectors.toList()));
-    }
-
-    return bool.must().isEmpty() && bool.filter().isEmpty() ? Optional.empty() : Optional.of(bool);
+  /**
+   * Builds a get-by-id request.
+   */
+  public SearchRequest buildGetRequest(Object identifier, String index) {
+    return new SearchRequest.Builder()
+        .index(index)
+        .source(s -> s
+            .filter(f -> f
+                .includes(List.of(esFieldMapper.getMappedFields()))
+                .excludes(List.of(esFieldMapper.excludeFields()))
+            )
+        )
+        .query(Query.of(q -> q.match(MatchQuery.of(m -> m
+            .field("id")
+            .query(FieldValue.of(identifier.toString()))
+        ))))
+        .build();
   }
 
-  protected abstract void buildSpecificQuery(
-      BoolQueryBuilder queryBuilder, Map<P, Set<String>> params);
-
-  private List<QueryBuilder> buildTermQuery(Collection<String> values, P param, String esField) {
-    List<QueryBuilder> queries = new ArrayList<>();
-
-    // collect queries for each value
+  /**
+   * Builds queries for a parameter's values, handling ranges and nested fields.
+   */
+  protected List<Query> buildTermQuery(Collection<String> values, P param, String esField) {
+    List<Query> queries = new ArrayList<>();
     List<String> parsedValues = new ArrayList<>();
+
     for (String value : values) {
       if (isNumericRange(value) || (esFieldMapper.isDateField(esField) && isDateRange(value))) {
         queries.add(buildRangeQuery(esField, value));
         continue;
       }
 
-      parsedValues.add(parseParamValue(value, param));
+      String parsedValue = parseParamValue(value, param);
+      if (parsedValue != null) {
+        parsedValues.add(parsedValue);
+      }
     }
 
-    if (parsedValues.size() == 1) {
-      // single term
-      queries.add(termQuery(esField, parsedValues.get(0)));
-    } else if (parsedValues.size() > 1) {
-      // multi term query
-      queries.add(termsQuery(esField, parsedValues));
+    if (!parsedValues.isEmpty()) {
+      if (isNestedField(esField)) {
+        queries.add(buildNestedQuery(esField, parsedValues));
+      } else {
+        queries.add(buildTermOrTermsQuery(esField, parsedValues));
+      }
     }
 
     return queries;
   }
 
-  private RangeQueryBuilder buildRangeQuery(String esField, String value) {
-    RangeQueryBuilder builder = rangeQuery(esField);
-
-    if (esFieldMapper.isDateField(esField)) {
-      String[] values = value.split(RANGE_SEPARATOR);
-
-      LocalDateTime lowerBound = LOWER_BOUND_RANGE_PARSER.apply(values[0]);
-      if (lowerBound != null) {
-        builder.gte(lowerBound);
-      }
-
-      LocalDateTime upperBound = UPPER_BOUND_RANGE_PARSER.apply(values[1]);
-      if (upperBound != null) {
-        builder.lte(upperBound);
-      }
-    } else {
-      String[] values = value.split(RANGE_SEPARATOR);
-      if (!RANGE_WILDCARD.equals(values[0])) {
-        builder.gte(values[0]);
-      }
-      if (!RANGE_WILDCARD.equals(values[1])) {
-        builder.lte(values[1]);
-      }
-    }
-
-    return builder;
+  /**
+   * Checks if a field is nested and requires special query handling.
+   */
+  private boolean isNestedField(String esField) {
+    return NESTED_FIELDS.stream().anyMatch(esField::startsWith);
   }
 
+  /**
+   * Builds a nested query for nested field types.
+   */
+  private Query buildNestedQuery(String esField, List<String> values) {
+    String[] fieldParts = esField.split("\\.", 2);
+    if (fieldParts.length < 2) {
+      return buildTermOrTermsQuery(esField, values);
+    }
+
+    String nestedPath = fieldParts[0];
+
+    List<FieldValue> fieldValues = values.stream()
+        .map(FieldValue::of)
+        .toList();
+
+    return Query.of(q -> q.nested(n -> n
+        .path(nestedPath)
+        .query(Query.of(nq -> nq.terms(t -> t
+            .field(esField)
+            .terms(ts -> ts.value(fieldValues))
+        )))
+    ));
+  }
+
+  /**
+   * Builds a term or terms query for regular fields.
+   */
+  private Query buildTermOrTermsQuery(String esField, List<String> values) {
+    if (values.size() == 1) {
+      return Query.of(q -> q.term(t -> t.field(esField).value(FieldValue.of(values.get(0)))));
+    } else {
+      List<FieldValue> fieldValues = values.stream()
+          .map(FieldValue::of)
+          .toList();
+      return Query.of(q -> q.terms(t -> t.field(esField).terms(ts -> ts.value(fieldValues))));
+    }
+  }
+
+  /**
+   * Builds range queries for numeric and date fields.
+   */
+  private Query buildRangeQuery(String esField, String value) {
+    String[] values = value.split(RANGE_SEPARATOR);
+
+    if (values.length != 2) {
+      throw new IllegalArgumentException("Invalid range format: " + value);
+    }
+
+    if (esFieldMapper.isDateField(esField)) {
+      return buildDateRangeQuery(esField, values);
+    } else {
+      return buildNumericRangeQuery(esField, values);
+    }
+  }
+
+  /**
+   * Builds a date range query.
+   */
+  private Query buildDateRangeQuery(String esField, String[] values) {
+    LocalDateTime lower = LOWER_BOUND_RANGE_PARSER.apply(values[0]);
+    LocalDateTime upper = UPPER_BOUND_RANGE_PARSER.apply(values[1]);
+
+    return Query.of(q -> q.range(r -> r.date(d -> {
+      d.field(esField);
+      if (lower != null) d.gte(lower.toString());
+      if (upper != null) d.lte(upper.toString());
+      return d;
+    })));
+  }
+
+  /**
+   * Builds a numeric range query.
+   */
+  private Query buildNumericRangeQuery(String esField, String[] values) {
+    // Try to parse as numbers first
+    try {
+      Double lowerBound = RANGE_WILDCARD.equals(values[0]) ? null : Double.parseDouble(values[0]);
+      Double upperBound = RANGE_WILDCARD.equals(values[1]) ? null : Double.parseDouble(values[1]);
+
+      return Query.of(q -> q.range(r -> r.number(n -> {
+        n.field(esField);
+        if (lowerBound != null) n.gte(lowerBound);
+        if (upperBound != null) n.lte(upperBound);
+        return n;
+      })));
+    } catch (NumberFormatException e) {
+      // Fall back to term range for non-numeric values
+      return Query.of(q -> q.range(r -> r.term(t -> {
+        t.field(esField);
+        if (!RANGE_WILDCARD.equals(values[0])) t.gte(values[0]);
+        if (!RANGE_WILDCARD.equals(values[1])) t.lte(values[1]);
+        return t;
+      })));
+    }
+  }
+
+  /**
+   * Parses parameter values based on their type.
+   */
   private String parseParamValue(String value, P parameter) {
     if (Enum.class.isAssignableFrom(parameter.type())) {
-      if (Country.class.isAssignableFrom(parameter.type())) {
-        return VocabularyUtils.lookup(value, Country.class)
-            .map(Country::getIso2LetterCode)
-            .orElse(value);
-      } else if (LiteratureType.class.isAssignableFrom(parameter.type())) {
-        return VocabularyUtils.lookup(value, LiteratureType.class)
-            .map(Enum::name)
-            .map(String::toLowerCase)
-            .orElse(value);
-      } else if (Language.class.isAssignableFrom(parameter.type())) {
-        return VocabularyUtils.lookup(value, Language.class)
-            .map(Language::getIso3LetterCode)
-            .orElse(value);
-      } else {
-        return VocabularyUtils.lookup(value, (Class<Enum<?>>) parameter.type())
-            .map(Enum::name)
-            .orElse(null);
-      }
+      return parseEnumValue(value, parameter);
     }
 
     if (Boolean.class.isAssignableFrom(parameter.type())) {
@@ -390,35 +477,64 @@ public abstract class EsSearchRequestBuilder<P extends SearchParameter> {
     return value;
   }
 
-  GroupedParams<P> groupParameters(FacetedSearchRequest<P> searchRequest) {
+  /**
+   * Parses enum parameter values with special handling for different enum types.
+   */
+  private String parseEnumValue(String value, P parameter) {
+    if (Country.class.isAssignableFrom(parameter.type())) {
+      return VocabularyUtils.lookup(value, Country.class)
+          .map(Country::getIso2LetterCode)
+          .orElse(value);
+    } else if (LiteratureType.class.isAssignableFrom(parameter.type())) {
+      return VocabularyUtils.lookup(value, LiteratureType.class)
+          .map(Enum::name)
+          .map(String::toLowerCase)
+          .orElse(value);
+    } else if (Language.class.isAssignableFrom(parameter.type())) {
+      return VocabularyUtils.lookup(value, Language.class)
+          .map(Language::getIso3LetterCode)
+          .orElse(value);
+    } else {
+      return VocabularyUtils.lookup(value, (Class<Enum<?>>) parameter.type())
+          .map(Enum::name)
+          .orElse(null);
+    }
+  }
+
+  /**
+   * Groups parameters into query filters and post filters for multi-select facet support.
+   */
+  private GroupedParams<P> groupParameters(FacetedSearchRequest<P> searchRequest) {
     GroupedParams<P> groupedParams = new GroupedParams<>();
 
-    if (!searchRequest.isMultiSelectFacets()
-        || searchRequest.getFacets() == null
-        || searchRequest.getFacets().isEmpty()) {
+    if (!searchRequest.isFacetMultiSelect() ||
+        searchRequest.getFacets() == null ||
+        searchRequest.getFacets().isEmpty()) {
+      // No multi-select, all parameters go to main query
       groupedParams.queryParams = searchRequest.getParameters();
       return groupedParams;
     }
 
+    // Split parameters between query and post-filter
     groupedParams.queryParams = new HashMap<>();
     groupedParams.postFilterParams = new HashMap<>();
 
-    searchRequest
-        .getParameters()
-        .forEach(
-            (k, v) -> {
-              if (searchRequest.getFacets().contains(k)) {
-                groupedParams.postFilterParams.put(k, v);
-              } else {
-                groupedParams.queryParams.put(k, v);
-              }
-            });
+    searchRequest.getParameters().forEach((k, v) -> {
+      if (searchRequest.getFacets().contains(k)) {
+        groupedParams.postFilterParams.put(k, v);
+      } else {
+        groupedParams.queryParams.put(k, v);
+      }
+    });
 
     return groupedParams;
   }
 
+  /**
+   * Helper class to hold grouped parameters for multi-select facet logic.
+   */
   static class GroupedParams<P extends SearchParameter> {
-    Map<P, Set<String>> postFilterParams;
-    Map<P, Set<String>> queryParams;
+    Map<P, Set<String>> postFilterParams = new HashMap<>();
+    Map<P, Set<String>> queryParams = new HashMap<>();
   }
 }
