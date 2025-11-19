@@ -286,6 +286,11 @@
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
 
     <!-- Lombok for Spring Boot 3.x compatibility -->
     <dependency>
