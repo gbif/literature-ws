@@ -48,7 +48,7 @@
     <zookeeper.version>3.8.1</zookeeper.version>
     <curator.version>5.5.0</curator.version>
     <curator-framework.version>5.5.0-disable-connectstr-updates</curator-framework.version>
-    <gbif-api.version>2.2.0-java17-SNAPSHOT</gbif-api.version>
+    <gbif-api.version>2.2.1-SNAPSHOT</gbif-api.version>
     <gbif-common-ws.version>2.1.0</gbif-common-ws.version>
     <micrometer.version>1.12.2</micrometer.version>
 
@@ -291,6 +291,11 @@
       <artifactId>jackson-annotations</artifactId>
       <version>${jackson.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
 
     <!-- Lombok for Spring Boot 3.x compatibility -->
     <dependency>
@@ -298,11 +303,6 @@
       <artifactId>lombok</artifactId>
       <version>${lombok.version}</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
     <!-- Jakarta JSON API for ES 9 -->
     <dependency>
