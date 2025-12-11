@@ -39,29 +39,29 @@
   </repositories>
 
   <properties>
-    <spring-boot.version>3.2.8</spring-boot.version>
-    <spring-boot-admin.version>3.2.3</spring-boot-admin.version>
+    <spring-boot.version>3.5.8</spring-boot.version>
+    <spring-boot-admin.version>3.4.1</spring-boot-admin.version>
     <start-class>org.gbif.literature.LiteratureApplication</start-class>
-    <springdoc-openapi-ui.version>2.6.0</springdoc-openapi-ui.version>
-    <swagger-annotations.version>2.2.20</swagger-annotations.version>
+    <springdoc-openapi-ui.version>2.7.0</springdoc-openapi-ui.version>
+    <swagger-annotations.version>2.2.26</swagger-annotations.version>
     <super-csv.version>2.4.0</super-csv.version>
     <zookeeper.version>3.8.1</zookeeper.version>
     <curator.version>5.5.0</curator.version>
     <curator-framework.version>5.5.0-disable-connectstr-updates</curator-framework.version>
     <gbif-api.version>2.2.1-SNAPSHOT</gbif-api.version>
     <gbif-common-ws.version>2.1.1-SNAPSHOT</gbif-common-ws.version>
-    <micrometer.version>1.12.2</micrometer.version>
+    <micrometer.version>1.15.6</micrometer.version>
 
-    <spring-cloud.version>2023.0.3</spring-cloud.version>
+    <spring-cloud.version>2025.0.0</spring-cloud.version>
     <spring-cloud-zookeeper.version>4.1.3</spring-cloud-zookeeper.version>
     <spring-cloud-openfeign.version>4.1.3</spring-cloud-openfeign.version>
     <scala.version>2.11.8</scala.version>
     <elasticsearch.version>9.0.4</elasticsearch.version>
-    <jackson.version>2.17.0</jackson.version>
+    <jackson.version>2.19.4</jackson.version>
     <jakarta-json.version>2.0.1</jakarta-json.version>
-    <guava.version>33.2.1-jre</guava.version>
-    <logback.version>1.4.14</logback.version>
-    <logstash-logback-encoder.version>7.4</logstash-logback-encoder.version>
+    <guava.version>33.5.0-jre</guava.version>
+    <logback.version>1.5.21</logback.version>
+    <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
 
     <spring-boot-maven-plugin.version>${spring-boot.version}</spring-boot-maven-plugin.version>
     <springdoc-openapi-maven-plugin.version>1.4</springdoc-openapi-maven-plugin.version>
