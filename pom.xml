@@ -296,11 +296,20 @@
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
     </dependency>
+
+    <!-- Lombok for Spring Boot 3.x compatibility -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
       <version>${jackson.version}</version>
     </dependency>
+    <!-- Jakarta JSON API for ES 9 -->
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+      <version>${jakarta-json.version}</version>
+    </dependency>
+    <!-- Low-level REST client (required by elasticsearch-java) -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
