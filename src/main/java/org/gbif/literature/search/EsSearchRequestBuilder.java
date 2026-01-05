@@ -413,7 +413,6 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     if (values.length != 2) {
       throw new IllegalArgumentException("Invalid range format: " + value);
     }
-  }
 
     if (esFieldMapper.isDateField(esField)) {
       return buildDateRangeQuery(esField, values);
