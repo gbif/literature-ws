@@ -201,15 +201,12 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   @Override
   public Query fullTextQuery(String q) {
     String escapedQuery = escapeQuery(q);
-    return Query.of(
-        query ->
-            query.multiMatch(
-                mm ->
-                    mm.query(escapedQuery)
-                        .fields(
-                            "title^10", "abstract^2", "_all^1", "source", "publisher", "keywords^5")
-                        .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)
-                        .fuzziness("AUTO")
-                        .prefixLength(3)));
+    return Query.of(query -> query.multiMatch(mm -> mm
+        .query(escapedQuery)
+        .fields("title^10", "abstract^2", "_all^1", "source", "publisher", "keywords^5")
+        .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)
+        .fuzziness("AUTO")
+        .prefixLength(3)
+    ));
   }
 }

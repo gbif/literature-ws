@@ -23,7 +23,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class LiteratureApplicationTests {
   @MockBean UserDetailsService userDetailsService;
   @MockBean PasswordEncoder passwordEncoder;
-
   @Test
   void contextLoads() {}
 }

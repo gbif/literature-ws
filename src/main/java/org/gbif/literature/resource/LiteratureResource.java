@@ -399,7 +399,11 @@ public class LiteratureResource {
         outputStream -> {
           try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
             CsvWriter.literatureSearchResultCsvWriter(
-                    new LiteraturePager(searchService, searchRequest, EXPORT_PAGE_LIMIT), format)
+                    new LiteraturePager(
+                        searchService,
+                        searchRequest,
+                        EXPORT_PAGE_LIMIT),
+                    format)
                 .export(writer);
           }
         };

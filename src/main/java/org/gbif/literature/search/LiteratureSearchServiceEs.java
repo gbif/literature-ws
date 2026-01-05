@@ -31,8 +31,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
   private ElasticsearchClient elasticsearchClient;
-  private final EsResponseParser<LiteratureSearchResult, LiteratureSearchParameter>
-      esResponseParser;
+  private final EsResponseParser<LiteratureSearchResult, LiteratureSearchParameter> esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
   private final String index;
   private final int maxResultWindow;
@@ -67,15 +66,13 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   }
 
   @Override
-  public org.gbif.api.model.common.search.SearchResponse<
-          LiteratureSearchResult, LiteratureSearchParameter>
-      search(LiteratureSearchRequest literatureSearchRequest) {
+  public org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> search(
+      LiteratureSearchRequest literatureSearchRequest) {
     return searchInternal(literatureSearchRequest);
   }
 
-  private org.gbif.api.model.common.search.SearchResponse<
-          LiteratureSearchResult, LiteratureSearchParameter>
-      searchInternal(LiteratureSearchRequest literatureSearchRequest) {
+  private org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> searchInternal(
+      LiteratureSearchRequest literatureSearchRequest) {
     int limit = literatureSearchRequest.getLimit();
     long offset = literatureSearchRequest.getOffset();
     boolean offsetExceeded = false;
@@ -88,12 +85,10 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
     try {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, index);
-      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse =
-          elasticsearchClient().search(searchRequest, Object.class);
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient().search(searchRequest, Object.class);
 
-      org.gbif.api.model.common.search.SearchResponse<
-              LiteratureSearchResult, LiteratureSearchParameter>
-          response = esResponseParser.buildSearchResponse(esResponse, literatureSearchRequest);
+      org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
+          esResponseParser.buildSearchResponse(esResponse, literatureSearchRequest);
 
       if (offsetExceeded) {
         response.setOffset(offset);
@@ -109,8 +104,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   public Optional<LiteratureSearchResult> get(Object identifier) {
     SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetRequest(identifier, index);
     try {
-      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse =
-          elasticsearchClient().search(getByIdRequest, Object.class);
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient().search(getByIdRequest, Object.class);
       return esResponseParser.buildGetResponse(esResponse);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -118,9 +112,8 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   }
 
   @Override
-  public org.gbif.api.model.common.search.SearchResponse<
-          LiteratureSearchResult, LiteratureSearchParameter>
-      exportSearch(LiteratureSearchRequest literatureSearchRequest) {
+  public org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
+      LiteratureSearchRequest literatureSearchRequest) {
     // For export searches, we use the same internal search method
     // The new client handles buffering internally
     return searchInternal(literatureSearchRequest);

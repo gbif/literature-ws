@@ -18,8 +18,6 @@ import java.net.URL;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultSingletonBeanRegistry;
 import org.springframework.context.ApplicationContext;
@@ -31,6 +29,9 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 public class EsConfig {
@@ -83,19 +84,18 @@ public class EsConfig {
     }
 
     // Create the low-level REST client
-    RestClient restClient =
-        RestClient.builder(hosts)
-            .setRequestConfigCallback(
-                requestConfigBuilder ->
-                    requestConfigBuilder
-                        .setConnectTimeout(esProperties.getConnectionTimeOut())
-                        .setSocketTimeout(esProperties.getSocketTimeOut())
-                        .setConnectionRequestTimeout(esProperties.getConnectionRequestTimeOut()))
-            .build();
+    RestClient restClient = RestClient.builder(hosts)
+        .setRequestConfigCallback(
+            requestConfigBuilder ->
+                requestConfigBuilder
+                    .setConnectTimeout(esProperties.getConnectionTimeOut())
+                    .setSocketTimeout(esProperties.getSocketTimeOut())
+                    .setConnectionRequestTimeout(esProperties.getConnectionRequestTimeOut()))
+        .build();
 
     // Create the transport with a Jackson mapper
-    ElasticsearchTransport transport =
-        new RestClientTransport(restClient, new JacksonJsonpMapper());
+    ElasticsearchTransport transport = new RestClientTransport(
+        restClient, new JacksonJsonpMapper());
 
     // Create and return the API client
     return new ElasticsearchClient(transport);

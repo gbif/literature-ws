@@ -22,7 +22,7 @@ public interface SearchResultConverter<T> {
 
   /**
    * Converts a search hit into a concrete result object.
-   *
+   * 
    * @param hit the search hit
    * @return converted result object
    */
