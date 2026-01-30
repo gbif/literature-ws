@@ -13,6 +13,14 @@
  */
 package org.gbif.literature.search;
 
+import java.time.Instant;
+
+import java.time.LocalDate;
+
+import java.time.ZoneOffset;
+
+import java.time.format.DateTimeFormatter;
+
 import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
@@ -91,8 +99,7 @@ public class LiteratureSearchResultConverter
         .ifPresent(result::setCountriesOfCoverage);
     extractSet(source, "countriesOfResearcher", Country.class, Country::fromIsoCode)
         .ifPresent(result::setCountriesOfResearcher);
-    extractDateField(source, "created").ifPresent(result::setAdded);
-    extractDateField(source, "published").ifPresent(result::setPublished);
+    extractIsoDateField(source, "created").ifPresent(result::setAdded);
     extractIntegerField(source, "day").ifPresent(result::setDay);
     extractStringList(source, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
     extractLongList(source, "gbifOccurrenceKey").ifPresent(result::setGbifOccurrenceKey);
@@ -133,6 +140,7 @@ public class LiteratureSearchResultConverter
     extractIntegerField(source, "year").ifPresent(result::setYear);
     extractSet(source, "publishingCountry", Country.class, Country::fromIsoCode)
         .ifPresent(result::setPublishingCountry);
+    extractDateField(source, "createdAt").ifPresent(result::setPublished);
   }
 
   private void handleHighlighting(
@@ -185,9 +193,23 @@ public class LiteratureSearchResultConverter
         source,
         fieldName,
         node -> {
-          long epochMilli = node.asLong();
-          return Date.from(java.time.Instant.ofEpochMilli(epochMilli));
+          try {
+            // Try ISO timestamp first
+            return Date.from(Instant.parse(node.asText()));
+          } catch (Exception e) {
+            // Fallback to yyyy-MM-dd
+            LocalDate d = LocalDate.parse(node.asText(), DateTimeFormatter.ISO_LOCAL_DATE);
+            return Date.from(d.atStartOfDay(ZoneOffset.UTC).toInstant());
+          }
         });
+  }
+
+  private Optional<Date> extractIsoDateField(JsonNode source, String fieldName) {
+    return extractValue(
+      source,
+      fieldName,
+      node -> Date.from(java.time.Instant.parse(node.asText()))
+    );
   }
 
   private <T> Optional<List<T>> extractList(

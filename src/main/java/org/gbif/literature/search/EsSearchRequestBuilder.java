@@ -230,7 +230,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
   }
 
   /**
-   * Adds a single facet aggregation with multi-select logic.
+   * adds a single facet aggregation with multi-select logic.
    */
   private void addSingleFacetAggregation(SearchRequest.Builder builder, FacetedSearchRequest<P> searchRequest,
                                         GroupedParams<P> groupedParams, P facetParam, String esField) {
