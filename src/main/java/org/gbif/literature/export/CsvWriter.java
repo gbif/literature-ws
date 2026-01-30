@@ -117,7 +117,6 @@ public class CsvWriter<T> {
               "title",
               "authors",
               "source",
-              "discovered",
               "published",
               "openAccess",
               "peerReview",
