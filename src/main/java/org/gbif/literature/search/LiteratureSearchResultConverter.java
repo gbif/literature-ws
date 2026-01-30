@@ -13,17 +13,6 @@
  */
 package org.gbif.literature.search;
 
-import java.time.Instant;
-
-import java.time.LocalDate;
-
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-
-import java.time.format.DateTimeFormatter;
-
-import java.time.format.DateTimeParseException;
-
 import org.gbif.api.model.literature.LiteratureRelevance;
 import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
@@ -32,6 +21,10 @@ import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.GbifRegion;
 import org.gbif.api.vocabulary.Language;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +95,7 @@ public class LiteratureSearchResultConverter
         .ifPresent(result::setCountriesOfCoverage);
     extractSet(source, "countriesOfResearcher", Country.class, Country::fromIsoCode)
         .ifPresent(result::setCountriesOfResearcher);
-    extractIsoDateField(source, "created").ifPresent(result::setAdded);
+    extractDateField(source, "created").ifPresent(result::setAdded);
     extractIntegerField(source, "day").ifPresent(result::setDay);
     extractStringList(source, "gbifDownloadKey").ifPresent(result::setGbifDownloadKey);
     extractLongList(source, "gbifOccurrenceKey").ifPresent(result::setGbifOccurrenceKey);
@@ -196,41 +189,15 @@ public class LiteratureSearchResultConverter
       source,
       fieldName,
       node -> {
-        String s = node.asText();
-
-        // 1) Date-only: yyyy-MM-dd
         try {
-          LocalDate d = LocalDate.parse(s, DateTimeFormatter.ISO_LOCAL_DATE);
+          // Try ISO timestamp first
+          return Date.from(Instant.parse(node.asText()));
+        } catch (Exception e) {
+          // Fallback to yyyy-MM-dd
+          LocalDate d = LocalDate.parse(node.asText(), DateTimeFormatter.ISO_LOCAL_DATE);
           return Date.from(d.atStartOfDay(ZoneOffset.UTC).toInstant());
-        } catch (DateTimeParseException ignored) {
-          // not a plain date
-        }
-
-        // 2) Timestamp with offset or zone (e.g. 2025-11-21T00:00:00.000+00:00)
-        try {
-          LocalDate d = OffsetDateTime.parse(s).toLocalDate();
-          return Date.from(d.atStartOfDay(ZoneOffset.UTC).toInstant());
-        } catch (DateTimeParseException ignored) {
-          // not an offset datetime
-        }
-
-        // 3) ISO instant with 'Z' (e.g. 2025-11-21T00:00:00.000Z)
-        // (This is mostly redundant if #2 works, but harmless and explicit.)
-        try {
-          LocalDate d = Instant.parse(s).atZone(ZoneOffset.UTC).toLocalDate();
-          return Date.from(d.atStartOfDay(ZoneOffset.UTC).toInstant());
-        } catch (DateTimeParseException e) {
-          throw new IllegalArgumentException("Unsupported date format for field '" + fieldName + "': " + s, e);
         }
       });
-  }
-
-  private Optional<Date> extractIsoDateField(JsonNode source, String fieldName) {
-    return extractValue(
-      source,
-      fieldName,
-      node -> Date.from(java.time.Instant.parse(node.asText()))
-    );
   }
 
   private <T> Optional<List<T>> extractList(

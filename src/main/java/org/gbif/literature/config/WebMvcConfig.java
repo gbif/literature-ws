@@ -13,6 +13,11 @@
  */
 package org.gbif.literature.config;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.time.LocalDate;
+
+import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.ws.json.JacksonJsonObjectMapperProvider;
 
 import java.util.List;
@@ -26,9 +31,16 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+
+  /** Mixin to format the published date in LiteratureSearchResult. */
+  public abstract static class LiteraturePublishedMixin {
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    abstract LocalDate getPublished();
+  }
 
   @Override
   public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
@@ -42,9 +54,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
     return firewall;
   }
 
+
   @Primary
   @Bean
   public ObjectMapper registryObjectMapper() {
-    return JacksonJsonObjectMapperProvider.getObjectMapper();
+    return JacksonJsonObjectMapperProvider.getObjectMapper()
+              .registerModule(new JavaTimeModule())
+              .addMixIn(LiteratureSearchResult.class, LiteraturePublishedMixin.class);
   }
 }

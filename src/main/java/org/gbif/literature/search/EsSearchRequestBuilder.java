@@ -13,8 +13,6 @@
  */
 package org.gbif.literature.search;
 
-import co.elastic.clients.elasticsearch._types.SortOptions;
-
 import org.gbif.api.model.common.search.FacetedSearchRequest;
 import org.gbif.api.model.common.search.SearchConstants;
 import org.gbif.api.model.common.search.SearchParameter;
@@ -22,7 +20,6 @@ import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.util.VocabularyUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.Language;
-import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
@@ -41,6 +39,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 
 import static org.gbif.api.util.SearchTypeValidator.isDateRange;
+import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
