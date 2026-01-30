@@ -49,6 +49,8 @@ import lombok.SneakyThrows;
 @Builder
 public class CsvWriter<T> {
 
+  private static final String DATE_FORMAT_STR_PLAIN = "yyyy-MM-dd";
+
   // Delimiter used for list/array of elements
   public static final String ARRAY_DELIMITER = "|";
 
@@ -138,7 +140,6 @@ public class CsvWriter<T> {
               "title",
               "authors",
               "source",
-              "discovered",
               "published",
               "open_access",
               "peer_review",
@@ -160,8 +161,7 @@ public class CsvWriter<T> {
               new Optional(new CleanStringProcessor()), // title
               new Optional(new AuthorProcessor()), //  authors
               new Optional(new CleanStringProcessor()), // source,
-              new Optional(new CleanStringProcessor()), // discovered,
-              new Optional(new FmtDate(StdDateFormat.DATE_FORMAT_STR_ISO8601)), // published,
+              new Optional(new FmtDate(DATE_FORMAT_STR_PLAIN)), // published,
               new Optional(new FmtBool("true", "false")), // openAccess,
               new Optional(new FmtBool("true", "false")), // peerReview,
               new Optional(new CleanStringProcessor()), // citationType,
