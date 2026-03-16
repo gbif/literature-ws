@@ -131,7 +131,7 @@ public class LiteratureSearchResultConverter
     extractStringField(source, "title").ifPresent(result::setTitle);
     extractSet(source, "topics", LiteratureTopic.class, s -> LiteratureTopic.valueOf(s.toUpperCase()))
         .ifPresent(result::setTopics);
-    extractDateField(source, "modified").ifPresent(result::setModified);
+    extractDateField(source, "updatedAt").ifPresent(result::setModified);
     extractStringList(source, "websites").ifPresent(result::setWebsites);
     extractIntegerField(source, "year").ifPresent(result::setYear);
     extractSet(source, "publishingCountry", Country.class, Country::fromIsoCode)
