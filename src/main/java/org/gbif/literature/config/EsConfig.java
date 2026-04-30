@@ -18,11 +18,6 @@ import java.net.URL;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.DefaultSingletonBeanRegistry;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -34,33 +29,6 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 
 @Configuration
 public class EsConfig {
-
-  private static final Logger log = LoggerFactory.getLogger(EsConfig.class);
-
-  @Autowired private ApplicationContext applicationContext;
-
-  /**
-   * Re-creates the instance of the ElasticsearchClient.
-   */
-  public ElasticsearchClient reCreateElasticsearchClient() {
-    ElasticsearchClient elasticsearchClient =
-        applicationContext.getBean("elasticsearchClient", ElasticsearchClient.class);
-
-    // Check if the underlying transport is still healthy
-    try {
-      elasticsearchClient.ping();
-      return elasticsearchClient;
-    } catch (Exception e) {
-      log.warn("Recreating Elasticsearch client due to unhealthy connection", e);
-      DefaultSingletonBeanRegistry registry =
-          (DefaultSingletonBeanRegistry) applicationContext.getAutowireCapableBeanFactory();
-      registry.destroySingleton("elasticsearchClient");
-      registry.registerSingleton(
-          "elasticsearchClient",
-          elasticsearchClient(applicationContext.getBean(EsClientConfigProperties.class)));
-      return applicationContext.getBean("elasticsearchClient", ElasticsearchClient.class);
-    }
-  }
 
   @Bean("elasticsearchClient")
   @Primary

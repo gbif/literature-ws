@@ -17,7 +17,6 @@ import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.literature.config.EsClientConfigProperties;
-import org.gbif.literature.config.EsConfig;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -30,39 +29,23 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 @Service
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
-  private ElasticsearchClient elasticsearchClient;
+  private final ElasticsearchClient elasticsearchClient;
   private final EsResponseParser<LiteratureSearchResult, LiteratureSearchParameter> esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
   private final String index;
   private final int maxResultWindow;
-
-  private final EsConfig esConfig;
 
   public LiteratureSearchServiceEs(
       EsClientConfigProperties esClientConfigProperties,
       ElasticsearchClient elasticsearchClient,
       SearchResultConverter<LiteratureSearchResult> searchResultConverter,
       EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder,
-      EsFieldMapper<LiteratureSearchParameter> esFieldMapper,
-      EsConfig esConfig) {
+      EsFieldMapper<LiteratureSearchParameter> esFieldMapper) {
     this.index = esClientConfigProperties.getIndex();
     this.maxResultWindow = esClientConfigProperties.getMaxResultWindow();
     this.elasticsearchClient = elasticsearchClient;
     this.esResponseParser = new LiteratureEsResponseParser(searchResultConverter, esFieldMapper);
     this.esSearchRequestBuilder = esSearchRequestBuilder;
-    this.esConfig = esConfig;
-  }
-
-  public ElasticsearchClient elasticsearchClient() {
-    try {
-      // Try to ping to check if client is healthy
-      elasticsearchClient.ping();
-      return elasticsearchClient;
-    } catch (Exception e) {
-      // Recreate client if unhealthy
-      elasticsearchClient = esConfig.reCreateElasticsearchClient();
-      return elasticsearchClient;
-    }
   }
 
   @Override
@@ -85,7 +68,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
     try {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, index);
-      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient().search(searchRequest, Object.class);
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient.search(searchRequest, Object.class);
 
       org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
           esResponseParser.buildSearchResponse(esResponse, literatureSearchRequest);
@@ -104,7 +87,7 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   public Optional<LiteratureSearchResult> get(Object identifier) {
     SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetRequest(identifier, index);
     try {
-      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient().search(getByIdRequest, Object.class);
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient.search(getByIdRequest, Object.class);
       return esResponseParser.buildGetResponse(esResponse);
     } catch (IOException e) {
       throw new RuntimeException(e);
