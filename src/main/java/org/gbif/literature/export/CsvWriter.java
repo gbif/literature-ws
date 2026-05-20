@@ -14,7 +14,9 @@
 package org.gbif.literature.export;
 
 import org.gbif.api.model.common.export.ExportFormat;
+import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.LiteratureTopic;
+import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.vocabulary.Country;
@@ -60,9 +62,13 @@ public class CsvWriter<T> {
 
   private final CellProcessor[] processors;
 
-  private final Iterable<T> pager;
+  private final LiteraturePager pager;
 
   private final ExportFormat preference;
+
+  private final int exportPageLimit;
+
+  private final long maxExportBytes;
 
   // Use dozer if set to true.
   private Class<?> forClass;
@@ -82,10 +88,12 @@ public class CsvWriter<T> {
 
   @SneakyThrows
   public void export(Writer writer) {
+    Writer exportWriter =
+        maxExportBytes > 0 ? new ByteCountingWriter(writer, maxExportBytes) : writer;
     if (forClass != null) {
-      exportUsingDozerBeanWriter(writer);
+      exportUsingDozerBeanWriter(exportWriter);
     } else {
-      exportUsingBeanWriter(writer);
+      exportUsingBeanWriter(exportWriter);
     }
   }
 
@@ -93,9 +101,7 @@ public class CsvWriter<T> {
   private void exportUsingBeanWriter(Writer writer) {
     try (ICsvBeanWriter beanWriter = new CsvBeanWriter(writer, csvPreference())) {
       beanWriter.writeHeader(header);
-      for (T o : pager) {
-        beanWriter.write(o, fields, processors);
-      }
+      exportPages(result -> beanWriter.write(result, fields, processors));
     }
   }
 
@@ -104,15 +110,34 @@ public class CsvWriter<T> {
     try (CsvDozerBeanWriter beanWriter = new CsvDozerBeanWriter(writer, csvPreference())) {
       beanWriter.writeHeader(header);
       beanWriter.configureBeanMapping(forClass, fields);
-      for (T o : pager) {
-        beanWriter.write(o, processors);
+      exportPages(result -> beanWriter.write(result, processors));
+    }
+  }
+
+  @SneakyThrows
+  private void exportPages(LiteratureRowWriter rowWriter) {
+    try (LiteraturePager literaturePager = pager) {
+      while (true) {
+        SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
+            literaturePager.nextPage();
+        for (LiteratureSearchResult result : response.getResults()) {
+          rowWriter.write(result);
+        }
+        if (response.isEndOfRecords() || response.getResults().isEmpty()) {
+          break;
+        }
       }
     }
   }
 
-  /** Creates an CsvWriter/exporter of DatasetSearchResult. */
+  @FunctionalInterface
+  private interface LiteratureRowWriter {
+    void write(LiteratureSearchResult result) throws Exception;
+  }
+
+  /** Creates an CsvWriter/exporter of LiteratureSearchResult. */
   public static CsvWriter<LiteratureSearchResult> literatureSearchResultCsvWriter(
-      Iterable<LiteratureSearchResult> pager, ExportFormat preference) {
+      LiteraturePager pager, ExportFormat preference, int exportPageLimit, long maxExportBytes) {
     return CsvWriter.<LiteratureSearchResult>builder()
         .fields(
             new String[] {
@@ -179,6 +204,8 @@ public class CsvWriter<T> {
             })
         .preference(preference)
         .pager(pager)
+        .exportPageLimit(exportPageLimit)
+        .maxExportBytes(maxExportBytes)
         .build();
   }
 
