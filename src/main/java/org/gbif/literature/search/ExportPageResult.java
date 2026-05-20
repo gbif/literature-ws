@@ -13,27 +13,21 @@
  */
 package org.gbif.literature.search;
 
+import java.util.List;
+
 import org.gbif.api.model.common.search.SearchResponse;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
-import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
-import org.gbif.api.service.common.SearchService;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 
-public interface LiteratureSearchService
-    extends SearchService<
-        LiteratureSearchResult, LiteratureSearchParameter, LiteratureSearchRequest> {
+import lombok.Value;
 
-  Optional<LiteratureSearchResult> get(Object identifier);
+/** One page of export results plus cursor state for the next request. */
+@Value
+public class ExportPageResult {
 
-  ExportPageResult exportSearch(
-      LiteratureSearchRequest literatureSearchRequest,
-      List<FieldValue> searchAfter,
-      String pitId)
-      throws IOException;
+  SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> page;
+  String pitId;
+  List<FieldValue> nextSearchAfter;
 }

@@ -32,6 +32,7 @@ import java.util.Set;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
@@ -66,11 +67,36 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     this.esFieldMapper = esFieldMapper;
   }
 
+  /** Keep-alive for export point-in-time contexts. */
+  public static final Time EXPORT_PIT_KEEP_ALIVE = Time.of(t -> t.time("2m"));
+
   /**
    * Builds the main search request.
    */
   public SearchRequest buildSearchRequest(FacetedSearchRequest<P> searchRequest, String index) {
     return buildRequest(searchRequest, index);
+  }
+
+  /**
+   * Builds a lean search request for export: no facets, highlighting, track_total_hits, or offset.
+   * Uses PIT + search_after when {@code pitId} is provided.
+   */
+  public SearchRequest buildExportSearchRequest(
+      FacetedSearchRequest<P> searchRequest,
+      String index,
+      String pitId,
+      List<FieldValue> searchAfter) {
+
+    SearchRequest.Builder builder = new SearchRequest.Builder();
+    configureExportBasicRequest(builder, searchRequest, index, pitId, searchAfter);
+
+    GroupedParams<P> groupedParams = groupParametersForExport(searchRequest);
+    BoolQuery mainQuery = buildMainQuery(searchRequest, groupedParams);
+    builder.query(Query.of(q -> q.bool(mainQuery)));
+
+    configureExportSorting(builder);
+
+    return builder.build();
   }
 
   /**
@@ -102,6 +128,47 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     addAggregations(builder, searchRequest, groupedParams);
 
     return builder.build();
+  }
+
+  private void configureExportBasicRequest(
+      SearchRequest.Builder builder,
+      FacetedSearchRequest<P> searchRequest,
+      String index,
+      String pitId,
+      List<FieldValue> searchAfter) {
+
+    if (pitId != null) {
+      builder.pit(p -> p.id(pitId).keepAlive(EXPORT_PIT_KEEP_ALIVE));
+    } else {
+      builder.index(index);
+    }
+
+    builder.size(searchRequest.getLimit());
+    builder.trackTotalHits(t -> t.enabled(false));
+
+    builder.source(s -> s.filter(f -> f
+        .includes(List.of(esFieldMapper.getExportMappedFields()))
+        .excludes(List.of(esFieldMapper.excludeFields()))
+    ));
+
+    if (searchAfter != null && !searchAfter.isEmpty()) {
+      builder.searchAfter(searchAfter);
+    }
+  }
+
+  private void configureExportSorting(SearchRequest.Builder builder) {
+    for (SortOptions sort : esFieldMapper.exportSorts()) {
+      builder.sort(sort);
+    }
+  }
+
+  /**
+   * For export, all filter parameters belong in the main query (no facet post-filtering).
+   */
+  private GroupedParams<P> groupParametersForExport(FacetedSearchRequest<P> searchRequest) {
+    GroupedParams<P> groupedParams = new GroupedParams<>();
+    groupedParams.queryParams = searchRequest.getParameters();
+    return groupedParams;
   }
 
   /**

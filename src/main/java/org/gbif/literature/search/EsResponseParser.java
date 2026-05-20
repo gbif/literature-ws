@@ -63,6 +63,24 @@ public class EsResponseParser<T, P extends SearchParameter> {
   }
 
   /**
+   * Builds a paging-oriented response for export (no facets; total hits may be absent).
+   */
+  public SearchResponse<T, P> buildExportSearchResponse(
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse,
+      FacetedSearchRequest<P> searchRequest) {
+
+    SearchResponse<T, P> response = new SearchResponse<>(searchRequest);
+    response.setResults(extractResults(esResponse));
+    if (esResponse.hits().total() != null) {
+      response.setCount(esResponse.hits().total().value());
+    }
+    int pageSize = searchRequest.getLimit();
+    int returned = response.getResults().size();
+    response.setEndOfRecords(returned == 0 || returned < pageSize);
+    return response;
+  }
+
+  /**
    * Builds a response for get-by-id requests.
    */
   public Optional<T> buildGetResponse(co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {

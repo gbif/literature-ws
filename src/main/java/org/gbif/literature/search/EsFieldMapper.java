@@ -37,4 +37,14 @@ public interface EsFieldMapper<P extends SearchParameter> {
   default String[] getMappedFields() {
     return new String[0];
   }
+
+  /** Fields fetched for CSV/TSV export (leaner than UI search). */
+  default String[] getExportMappedFields() {
+    return getMappedFields();
+  }
+
+  /** Stable sort keys for export cursor pagination ({@code search_after} + PIT). */
+  default SortOptions[] exportSorts() {
+    return sorts();
+  }
 }
