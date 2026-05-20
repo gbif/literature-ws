@@ -36,10 +36,10 @@ class ExportRequestSupportTest {
     request.setFacetMultiSelect(true);
     request.setFacets(EnumSet.of(LiteratureSearchParameter.LITERATURE_TYPE));
 
-    LiteratureSearchRequest export = ExportRequestSupport.prepareForExport(request);
+    LiteratureSearchRequest export = ExportRequestSupport.prepareForExport(request, 500);
 
     assertEquals("fish", export.getQ());
-    assertEquals(300, export.getLimit());
+    assertEquals(500, export.getLimit());
     assertEquals(0, export.getOffset());
     assertNull(export.getFacets());
     assertFalse(export.isHighlight());

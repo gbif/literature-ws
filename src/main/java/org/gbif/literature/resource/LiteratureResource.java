@@ -408,7 +408,8 @@ public class LiteratureResource {
       @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
 
     LiteratureSearchRequest exportRequest =
-        ExportRequestSupport.prepareForExport(searchRequest);
+        ExportRequestSupport.prepareForExport(
+            searchRequest, literatureConfigProperties.getExportPageSize());
 
     StreamingResponseBody stream =
         outputStream -> {

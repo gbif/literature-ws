@@ -22,12 +22,15 @@ public final class ExportRequestSupport {
 
   /**
    * Returns a copy of the request suitable for export: no facets, highlighting, or paging offset.
+   *
+   * @param exportPageSize ES page size for each PIT/search_after request {@code limit})
    */
-  public static LiteratureSearchRequest prepareForExport(LiteratureSearchRequest request) {
+  public static LiteratureSearchRequest prepareForExport(
+      LiteratureSearchRequest request, int exportPageSize) {
     LiteratureSearchRequest exportRequest = new LiteratureSearchRequest();
     exportRequest.setQ(request.getQ());
     exportRequest.setParameters(request.getParameters());
-    exportRequest.setLimit(request.getLimit());
+    exportRequest.setLimit(exportPageSize);
     exportRequest.setOffset(0);
     exportRequest.setFacets(null);
     exportRequest.setHighlight(false);
