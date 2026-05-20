@@ -80,6 +80,36 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
         SortOptions.of(s -> s.field(f -> f.field("created").order(SortOrder.Desc)))
       };
 
+  /** Stable sort for export: created desc, then id asc tie-breaker for search_after. */
+  private static final SortOptions[] EXPORT_SORT =
+      new SortOptions[] {
+        SortOptions.of(s -> s.field(f -> f.field("created").order(SortOrder.Desc))),
+        SortOptions.of(s -> s.field(f -> f.field("id").order(SortOrder.Asc)))
+      };
+
+  /** Source fields required for CSV export columns (excludes heavy unused fields). */
+  private static final String[] EXPORT_MAPPED_FIELDS =
+      new String[] {
+        "title",
+        "authors",
+        "source",
+        "createdAt",
+        "openAccess",
+        "peerReview",
+        "citationType",
+        "countriesOfCoverage",
+        "countriesOfResearcher",
+        "keywords",
+        "literatureType",
+        "websites",
+        "identifiers",
+        "id",
+        "abstract",
+        "topics",
+        "created",
+        "gbifDownloadKey"
+      };
+
   private static final String[] EXCLUDE_FIELDS =
       new String[] {
         "_all",
@@ -146,6 +176,16 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
   @Override
   public SortOptions[] sorts() {
     return SORT;
+  }
+
+  @Override
+  public SortOptions[] exportSorts() {
+    return EXPORT_SORT;
+  }
+
+  @Override
+  public String[] getExportMappedFields() {
+    return EXPORT_MAPPED_FIELDS;
   }
 
   @Override

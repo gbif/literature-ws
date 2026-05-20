@@ -26,9 +26,15 @@ import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.Language;
+import org.gbif.literature.config.EsClientConfigProperties;
+import org.gbif.literature.config.LiteratureConfigProperties;
 import org.gbif.literature.export.CsvWriter;
+import org.gbif.literature.export.ExportLimitExceededException;
+import org.gbif.literature.export.ExportRequestSupport;
 import org.gbif.literature.export.LiteraturePager;
 import org.gbif.literature.search.LiteratureSearchService;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
@@ -92,13 +98,20 @@ public class LiteratureResource {
   // Export header prefix
   private static final String FILE_HEADER_PRE = "attachment; filename=literature_";
 
-  // Page size to iterate over literature search export service
-  private static final int EXPORT_PAGE_LIMIT = 300;
-
   private final LiteratureSearchService searchService;
+  private final ElasticsearchClient elasticsearchClient;
+  private final EsClientConfigProperties esClientConfigProperties;
+  private final LiteratureConfigProperties literatureConfigProperties;
 
-  public LiteratureResource(LiteratureSearchService searchService) {
+  public LiteratureResource(
+      LiteratureSearchService searchService,
+      ElasticsearchClient elasticsearchClient,
+      EsClientConfigProperties esClientConfigProperties,
+      LiteratureConfigProperties literatureConfigProperties) {
     this.searchService = searchService;
+    this.elasticsearchClient = elasticsearchClient;
+    this.esClientConfigProperties = esClientConfigProperties;
+    this.literatureConfigProperties = literatureConfigProperties;
   }
 
   private static final String REPEATED =
@@ -394,17 +407,28 @@ public class LiteratureResource {
       @Parameter(hidden = true) LiteratureSearchRequest searchRequest,
       @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
 
-    // Creates a stream to write the CSV file
+    LiteratureSearchRequest exportRequest =
+        ExportRequestSupport.prepareForExport(searchRequest);
+
     StreamingResponseBody stream =
         outputStream -> {
-          try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream))) {
+          try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
+              LiteraturePager pager =
+                  new LiteraturePager(
+                      searchService,
+                      elasticsearchClient,
+                      esClientConfigProperties,
+                      literatureConfigProperties,
+                      exportRequest)) {
             CsvWriter.literatureSearchResultCsvWriter(
-                    new LiteraturePager(
-                        searchService,
-                        searchRequest,
-                        EXPORT_PAGE_LIMIT),
-                    format)
+                    pager,
+                    format,
+                    literatureConfigProperties.getExportPageSize(),
+                    literatureConfigProperties.getBufferLimitBytesExport())
                 .export(writer);
+          } catch (ExportLimitExceededException e) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage(), e);
           }
         };
 

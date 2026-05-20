@@ -13,24 +13,28 @@
  */
 package org.gbif.literature.search;
 
+import java.util.ArrayList;
+
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
 import org.gbif.literature.config.EsClientConfigProperties;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 
 @Service
 public class LiteratureSearchServiceEs implements LiteratureSearchService {
 
   private final ElasticsearchClient elasticsearchClient;
-  private final EsResponseParser<LiteratureSearchResult, LiteratureSearchParameter> esResponseParser;
+  private final LiteratureEsResponseParser esResponseParser;
   private final EsSearchRequestBuilder<LiteratureSearchParameter> esSearchRequestBuilder;
   private final String index;
   private final int maxResultWindow;
@@ -68,7 +72,8 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
     try {
       SearchRequest searchRequest =
           esSearchRequestBuilder.buildSearchRequest(literatureSearchRequest, index);
-      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient.search(searchRequest, Object.class);
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse =
+          elasticsearchClient.search(searchRequest, Object.class);
 
       org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response =
           esResponseParser.buildSearchResponse(esResponse, literatureSearchRequest);
@@ -87,7 +92,8 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   public Optional<LiteratureSearchResult> get(Object identifier) {
     SearchRequest getByIdRequest = esSearchRequestBuilder.buildGetRequest(identifier, index);
     try {
-      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse = elasticsearchClient.search(getByIdRequest, Object.class);
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse =
+          elasticsearchClient.search(getByIdRequest, Object.class);
       return esResponseParser.buildGetResponse(esResponse);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -95,10 +101,32 @@ public class LiteratureSearchServiceEs implements LiteratureSearchService {
   }
 
   @Override
-  public org.gbif.api.model.common.search.SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> exportSearch(
-      LiteratureSearchRequest literatureSearchRequest) {
-    // For export searches, we use the same internal search method
-    // The new client handles buffering internally
-    return searchInternal(literatureSearchRequest);
+  public ExportPageResult exportSearch(
+      LiteratureSearchRequest literatureSearchRequest,
+      List<FieldValue> searchAfter,
+      String pitId)
+      throws IOException {
+
+    SearchRequest searchRequest =
+        esSearchRequestBuilder.buildExportSearchRequest(
+            literatureSearchRequest, index, pitId, searchAfter);
+    co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse =
+        elasticsearchClient.search(searchRequest, Object.class);
+
+    var page = esResponseParser.buildExportSearchResponse(esResponse, literatureSearchRequest);
+    String nextPitId = esResponse.pitId() != null ? esResponse.pitId() : pitId;
+    List<FieldValue> nextSearchAfter = extractSearchAfter(esResponse);
+
+    return new ExportPageResult(page, nextPitId, nextSearchAfter);
+  }
+
+  private static List<FieldValue> extractSearchAfter(
+      co.elastic.clients.elasticsearch.core.SearchResponse<Object> esResponse) {
+    var hits = esResponse.hits().hits();
+    if (hits.isEmpty()) {
+      return new ArrayList<>();
+    }
+    List<FieldValue> sortValues = hits.get(hits.size() - 1).sort();
+    return sortValues == null || sortValues.isEmpty() ? null : sortValues;
   }
 }

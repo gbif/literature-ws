@@ -13,33 +13,107 @@
  */
 package org.gbif.literature.export;
 
-import org.gbif.api.model.common.paging.PagingRequest;
-import org.gbif.api.model.common.paging.PagingResponse;
-import org.gbif.api.model.common.search.SearchRequest;
+import org.gbif.api.model.common.search.SearchResponse;
+import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchResult;
-import org.gbif.api.util.iterables.BasePager;
+import org.gbif.literature.config.EsClientConfigProperties;
+import org.gbif.literature.config.LiteratureConfigProperties;
 import org.gbif.literature.search.LiteratureSearchService;
 
-/** Iterates over results of {@link LiteratureSearchService#search(SearchRequest)}. */
-public class LiteraturePager extends BasePager<LiteratureSearchResult> {
+import java.io.IOException;
+import java.util.List;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch.core.ClosePointInTimeRequest;
+import co.elastic.clients.elasticsearch.core.OpenPointInTimeRequest;
+import co.elastic.clients.elasticsearch.core.OpenPointInTimeResponse;
+
+import static org.gbif.literature.search.EsSearchRequestBuilder.EXPORT_PIT_KEEP_ALIVE;
+
+/** Cursor-paginated export over literature search results using PIT and search_after. */
+public class LiteraturePager implements AutoCloseable {
 
   private final LiteratureSearchService literatureSearchService;
+  private final ElasticsearchClient elasticsearchClient;
   private final LiteratureSearchRequest literatureSearchRequest;
+  private final String index;
+  private final int maxExportRecords;
+
+  private List<FieldValue> searchAfterValues;
+  private String pitId;
+  private int exportedRecords;
 
   public LiteraturePager(
       LiteratureSearchService literatureSearchService,
-      LiteratureSearchRequest literatureSearchRequest,
-      int pageSize) {
-    super(pageSize);
+      ElasticsearchClient elasticsearchClient,
+      EsClientConfigProperties esClientConfigProperties,
+      LiteratureConfigProperties literatureConfigProperties,
+      LiteratureSearchRequest literatureSearchRequest) {
     this.literatureSearchService = literatureSearchService;
+    this.elasticsearchClient = elasticsearchClient;
+    this.index = esClientConfigProperties.getIndex();
+    this.maxExportRecords = literatureConfigProperties.getMaxExportRecords();
     this.literatureSearchRequest = literatureSearchRequest;
   }
 
+  public SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> nextPage()
+      throws IOException {
+    if (exportedRecords >= maxExportRecords) {
+      throw new ExportLimitExceededException(
+          "Export exceeds maximum of " + maxExportRecords + " records");
+    }
+
+    if (pitId == null) {
+      pitId = openPit();
+    }
+
+    var exportPage =
+        literatureSearchService.exportSearch(literatureSearchRequest, searchAfterValues, pitId);
+
+    pitId = exportPage.getPitId();
+    searchAfterValues = exportPage.getNextSearchAfter();
+
+    SearchResponse<LiteratureSearchResult, LiteratureSearchParameter> response = exportPage.getPage();
+    int pageCount = response.getResults().size();
+    exportedRecords += pageCount;
+
+    if (response.isEndOfRecords() || response.getResults().isEmpty()) {
+      closePit();
+    } else if (exportedRecords >= maxExportRecords) {
+      response.setEndOfRecords(true);
+      closePit();
+    }
+
+    return response;
+  }
+
   @Override
-  public PagingResponse<LiteratureSearchResult> nextPage(PagingRequest pagingRequest) {
-    literatureSearchRequest.setOffset(pagingRequest.getOffset());
-    literatureSearchRequest.setLimit(pagingRequest.getLimit());
-    return literatureSearchService.exportSearch(literatureSearchRequest);
+  public void close() {
+    if (pitId != null) {
+      try {
+        closePit();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  private String openPit() throws IOException {
+    OpenPointInTimeRequest openRequest =
+        OpenPointInTimeRequest.of(o -> o.index(index).keepAlive(EXPORT_PIT_KEEP_ALIVE));
+    OpenPointInTimeResponse openResponse = elasticsearchClient.openPointInTime(openRequest);
+    return openResponse.id();
+  }
+
+  private void closePit() throws IOException {
+    if (pitId == null) {
+      return;
+    }
+    ClosePointInTimeRequest closeRequest = ClosePointInTimeRequest.of(c -> c.id(pitId));
+    elasticsearchClient.closePointInTime(closeRequest);
+    pitId = null;
+    searchAfterValues = null;
   }
 }
