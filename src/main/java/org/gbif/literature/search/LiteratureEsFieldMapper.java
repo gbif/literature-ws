@@ -18,6 +18,7 @@ import org.gbif.api.model.literature.LiteratureTopic;
 import org.gbif.api.model.literature.LiteratureType;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -193,9 +194,14 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
     return DATE_FIELDS.contains(esFieldName);
   }
 
-  @Override
-  public String[] getMappedFields() {
-    return new String[] {
+  /**
+   * Not on {@code LiteratureSearchResult}. Search used to request them anyway, and the ES client
+   * parsed every value before the converter dropped them.
+   */
+  private static final String[] SEARCH_OMIT_FIELDS = {"gbifDatasetKey", "publishingOrganizationKey", "citationKey"};
+
+  private static final String[] MAPPED_FIELDS =
+      new String[] {
       "title",
       "authors",
       "year",
@@ -236,6 +242,20 @@ public class LiteratureEsFieldMapper implements EsFieldMapper<LiteratureSearchPa
       "gbifProgrammeAcronym",
       "openAccess"
     };
+
+  private static final String[] SEARCH_MAPPED_FIELDS =
+      Arrays.stream(MAPPED_FIELDS)
+          .filter(field -> Arrays.stream(SEARCH_OMIT_FIELDS).noneMatch(field::equals))
+          .toArray(String[]::new);
+
+  @Override
+  public String[] getMappedFields() {
+    return MAPPED_FIELDS;
+  }
+
+  @Override
+  public String[] getSearchMappedFields() {
+    return SEARCH_MAPPED_FIELDS;
   }
 
   @Override

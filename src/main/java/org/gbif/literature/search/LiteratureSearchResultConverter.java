@@ -85,7 +85,7 @@ public class LiteratureSearchResultConverter
 
   private void populateFields(LiteratureSearchResult result, JsonNode source) {
     extractStringField(source, "abstract").ifPresent(result::setAbstract);
-    extractStringField(source, "discovered").ifPresent(result::setDiscovered);
+    extractStringField(source, "accessed").ifPresent(result::setDiscovered);
     extractValue(
             source,
             "authors",
