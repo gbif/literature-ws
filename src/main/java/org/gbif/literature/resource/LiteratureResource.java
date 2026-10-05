@@ -311,7 +311,7 @@ public class LiteratureResource {
         @Parameter(
             name = "modified",
             description =
-                "Date or date range when the publication was discovered. Format is ISO 8601, e.g., '2024-07-26' or '2024-07-26,2024-10-26'.",
+                "Date or date range when the publication was modified. Format is ISO 8601, e.g., '2024-07-26' or '2024-07-26,2024-10-26'.",
             schema = @Schema(implementation = Date.class),
             in = ParameterIn.QUERY,
             explode = Explode.TRUE)
