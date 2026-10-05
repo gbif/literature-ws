@@ -182,7 +182,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
 
     // Source filtering
     builder.source(s -> s.filter(f -> f
-        .includes(List.of(esFieldMapper.getMappedFields()))
+        .includes(List.of(esFieldMapper.getSearchMappedFields()))
         .excludes(List.of(esFieldMapper.excludeFields()))
     ));
   }
