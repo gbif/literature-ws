@@ -38,6 +38,13 @@ public interface EsFieldMapper<P extends SearchParameter> {
     return new String[0];
   }
 
+  /**
+   * Fields fetched for {@code /search}. Omits unbounded arrays that are still returned by GET by id.
+   */
+  default String[] getSearchMappedFields() {
+    return getMappedFields();
+  }
+
   /** Fields fetched for CSV/TSV export (leaner than UI search). */
   default String[] getExportMappedFields() {
     return getMappedFields();

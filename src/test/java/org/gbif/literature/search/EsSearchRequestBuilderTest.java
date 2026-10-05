@@ -74,6 +74,18 @@ class EsSearchRequestBuilderTest {
     assertEquals(
         List.of(fieldMapper.getExportMappedFields()),
         exportRequest.source().filter().includes());
+
+    assertEquals(
+        List.of(fieldMapper.getSearchMappedFields()),
+        uiRequest.source().filter().includes());
+    assertFalse(uiRequest.source().filter().includes().contains("gbifDatasetKey"));
+    assertFalse(uiRequest.source().filter().includes().contains("publishingOrganizationKey"));
+    assertFalse(uiRequest.source().filter().includes().contains("citationKey"));
+
+    SearchRequest getRequest = builder.buildGetRequest("83a00190-7038-3970-a7e8-5e5563c40e37", INDEX);
+    assertTrue(getRequest.source().filter().includes().contains("gbifDatasetKey"));
+    assertTrue(getRequest.source().filter().includes().contains("publishingOrganizationKey"));
+    assertTrue(getRequest.source().filter().includes().contains("citationKey"));
   }
 
   @Test
