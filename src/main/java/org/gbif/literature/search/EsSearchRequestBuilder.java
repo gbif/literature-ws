@@ -22,6 +22,7 @@ import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.Language;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,12 +39,14 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.HighlighterEncoder;
 
 import static org.gbif.api.util.SearchTypeValidator.isDateRange;
 import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
+import static org.gbif.literature.util.EsQueryUtils.STRING_TO_DATE;
 import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
@@ -54,7 +57,7 @@ import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
  */
 public class EsSearchRequestBuilder<P extends SearchParameter> {
 
-  private static final int MAX_SIZE_TERMS_AGGS = 1200000;
+  private static final int MAX_SIZE_TERMS_AGGS = 1000;
   private static final String PRE_HL_TAG = "<em class=\"gbifHl\">";
   private static final String POST_HL_TAG = "</em>";
 
@@ -270,6 +273,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     if (searchRequest.isHighlight()) {
       builder.highlight(h -> h
           .numberOfFragments(0)
+          .encoder(HighlighterEncoder.Html)
           .preTags(PRE_HL_TAG)
           .postTags(POST_HL_TAG)
           .fields("title", f -> f)
@@ -327,7 +331,10 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
         .terms(t -> t
             .field(esField)
             .size(aggsSize)
-            .minDocCount(searchRequest.getFacetMinCount() != null ? searchRequest.getFacetMinCount() : 1)
+            .minDocCount(
+                searchRequest.getFacetMinCount() != null
+                    ? Math.max(1, searchRequest.getFacetMinCount())
+                    : 1)
         )
     );
   }
@@ -367,13 +374,17 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     int maxCardinality = esFieldMapper.getCardinality(esField) != null ?
         esFieldMapper.getCardinality(esField) : Integer.MAX_VALUE;
 
-    int limit = Math.min(facetOffset + facetLimit, maxCardinality);
+    if (facetOffset < 0 || facetLimit < 0) {
+      throw new IllegalArgumentException("Facet offset and limit can't be negative");
+    }
+
+    long limit = Math.min((long) facetOffset + facetLimit, maxCardinality);
 
     if (limit > MAX_SIZE_TERMS_AGGS) {
       throw new IllegalArgumentException(
           "Facets paging is only supported up to " + MAX_SIZE_TERMS_AGGS + " elements");
     }
-    return limit;
+    return (int) limit;
   }
 
   /**
@@ -403,9 +414,16 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     List<String> parsedValues = new ArrayList<>();
 
     for (String value : values) {
-      if (isNumericRange(value) || (esFieldMapper.isDateField(esField) && isDateRange(value))) {
-        queries.add(buildRangeQuery(esField, value));
-        continue;
+      try {
+        if (isNumericRange(value) || (esFieldMapper.isDateField(esField) && isDateRange(value))) {
+          queries.add(buildRangeQuery(esField, value));
+          continue;
+        }
+        if (esFieldMapper.isDateField(esField)) {
+          STRING_TO_DATE.apply(value);
+        }
+      } catch (DateTimeParseException e) {
+        throw new IllegalArgumentException("Invalid date: " + value, e);
       }
 
       String parsedValue = parseParamValue(value, param);

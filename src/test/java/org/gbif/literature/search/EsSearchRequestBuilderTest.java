@@ -13,22 +13,26 @@
  */
 package org.gbif.literature.search;
 
+import org.gbif.api.model.common.paging.PagingRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.HighlighterEncoder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EsSearchRequestBuilderTest {
@@ -98,6 +102,64 @@ class EsSearchRequestBuilderTest {
         builder.buildExportSearchRequest(request, INDEX, "pit-xyz", cursor);
 
     assertEquals(cursor, exportRequest.searchAfter());
+  }
+
+  @Test
+  void buildSearchRequest_rejectsLargeFacetLimit() {
+    LiteratureSearchRequest request = facetedSearchRequest();
+    request.setFacets(EnumSet.of(LiteratureSearchParameter.GBIF_OCCURRENCE_KEY));
+    request.setFacetLimit(1_000_000);
+
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(request, INDEX));
+  }
+
+  @Test
+  void buildSearchRequest_rejectsOverflowingAndNegativeFacetPaging() {
+    LiteratureSearchRequest overflow = facetedSearchRequest();
+    overflow.setFacetLimit(Integer.MAX_VALUE);
+    overflow.setFacetOffset(10);
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(overflow, INDEX));
+
+    LiteratureSearchRequest wrapping = facetedSearchRequest();
+    wrapping.setFacetPages(
+        Map.of(
+            LiteratureSearchParameter.COUNTRIES_OF_COVERAGE,
+            new PagingRequest((1L << 32) + 5, 10)));
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(wrapping, INDEX));
+
+    LiteratureSearchRequest negative = facetedSearchRequest();
+    negative.setFacetLimit(-5);
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(negative, INDEX));
+  }
+
+  @Test
+  void buildSearchRequest_facetMinCountAtLeastOne() {
+    LiteratureSearchRequest request = facetedSearchRequest();
+    request.setFacetMinCount(0);
+
+    SearchRequest uiRequest = builder.buildSearchRequest(request, INDEX);
+
+    assertEquals(
+        1, uiRequest.aggregations().get("countriesOfCoverage").terms().minDocCount());
+  }
+
+  @Test
+  void buildSearchRequest_rejectsInvalidDates() {
+    LiteratureSearchRequest request = new LiteratureSearchRequest();
+    request.addParameter(LiteratureSearchParameter.ADDED, "2024-13-01");
+
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(request, INDEX));
+
+    LiteratureSearchRequest range = new LiteratureSearchRequest();
+    range.addParameter(LiteratureSearchParameter.ADDED, "2024-07-14,2024-08-14");
+    assertNotNull(builder.buildSearchRequest(range, INDEX));
+  }
+
+  @Test
+  void buildSearchRequest_highlightEncodesHtml() {
+    SearchRequest uiRequest = builder.buildSearchRequest(facetedSearchRequest(), INDEX);
+
+    assertEquals(HighlighterEncoder.Html, uiRequest.highlight().encoder());
   }
 
   private static LiteratureSearchRequest facetedSearchRequest() {

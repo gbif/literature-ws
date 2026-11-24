@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExportRequestSupportTest {
 
@@ -35,6 +36,7 @@ class ExportRequestSupportTest {
     request.setHighlight(true);
     request.setFacetMultiSelect(true);
     request.setFacets(EnumSet.of(LiteratureSearchParameter.LITERATURE_TYPE));
+    request.addFacetPage(LiteratureSearchParameter.LITERATURE_TYPE, 0, 10);
 
     LiteratureSearchRequest export = ExportRequestSupport.prepareForExport(request, 500);
 
@@ -42,6 +44,7 @@ class ExportRequestSupportTest {
     assertEquals(500, export.getLimit());
     assertEquals(0, export.getOffset());
     assertNull(export.getFacets());
+    assertTrue(export.getFacetPages() == null || export.getFacetPages().isEmpty());
     assertFalse(export.isHighlight());
     assertFalse(export.isFacetMultiSelect());
   }

@@ -166,7 +166,14 @@ public final class EsQueryUtils {
   public static <P extends SearchParameter> int extractFacetOffset(
       FacetedSearchRequest<P> request, P facet) {
     return Optional.ofNullable(request.getFacetPage(facet))
-        .map(v -> (int) v.getOffset())
+        .map(
+            v -> {
+              try {
+                return Math.toIntExact(v.getOffset());
+              } catch (ArithmeticException e) {
+                throw new IllegalArgumentException("Facet offset too large: " + v.getOffset());
+              }
+            })
         .orElse(request.getFacetOffset() != null ? request.getFacetOffset() : DEFAULT_FACET_OFFSET);
   }
 

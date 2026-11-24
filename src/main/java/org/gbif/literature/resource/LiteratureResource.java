@@ -45,10 +45,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -102,6 +105,7 @@ public class LiteratureResource {
   private final ElasticsearchClient elasticsearchClient;
   private final EsClientConfigProperties esClientConfigProperties;
   private final LiteratureConfigProperties literatureConfigProperties;
+  private final Semaphore exportPermits;
 
   public LiteratureResource(
       LiteratureSearchService searchService,
@@ -112,6 +116,10 @@ public class LiteratureResource {
     this.elasticsearchClient = elasticsearchClient;
     this.esClientConfigProperties = esClientConfigProperties;
     this.literatureConfigProperties = literatureConfigProperties;
+    if (literatureConfigProperties.getMaxConcurrentExports() < 1) {
+      throw new IllegalArgumentException("literature.maxConcurrentExports must be at least 1");
+    }
+    this.exportPermits = new Semaphore(literatureConfigProperties.getMaxConcurrentExports());
   }
 
   private static final String REPEATED =
@@ -400,12 +408,42 @@ public class LiteratureResource {
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Literature search results export."),
-        @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content)
+        @ApiResponse(responseCode = "400", description = "Invalid search query", content = @Content),
+        @ApiResponse(
+            responseCode = "413",
+            description = "Too many records, narrow the search",
+            content = @Content),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Too many concurrent exports",
+            content = @Content)
       })
   @GetMapping(value = "export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<StreamingResponseBody> export(
       @Parameter(hidden = true) LiteratureSearchRequest searchRequest,
       @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
+
+    // Count before streaming, the status can't change once the export has started. Records
+    // added between the count and the export can still truncate it. The permit only covers the
+    // count, the stream acquires its own so a cancelled stream can't leak it.
+    if (!exportPermits.tryAcquire()) {
+      throw tooManyExports();
+    }
+    Long count;
+    try {
+      count =
+          searchService.search(ExportRequestSupport.prepareForExport(searchRequest, 0)).getCount();
+    } finally {
+      exportPermits.release();
+    }
+    if (count != null && count > literatureConfigProperties.getMaxExportRecords()) {
+      throw new ExportLimitExceededException(
+          "Export has "
+              + count
+              + " records, maximum is "
+              + literatureConfigProperties.getMaxExportRecords()
+              + ". Narrow the search.");
+    }
 
     LiteratureSearchRequest exportRequest =
         ExportRequestSupport.prepareForExport(
@@ -413,6 +451,9 @@ public class LiteratureResource {
 
     StreamingResponseBody stream =
         outputStream -> {
+          if (!exportPermits.tryAcquire()) {
+            throw tooManyExports();
+          }
           try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
               LiteraturePager pager =
                   new LiteraturePager(
@@ -427,9 +468,8 @@ public class LiteratureResource {
                     literatureConfigProperties.getExportPageSize(),
                     literatureConfigProperties.getBufferLimitBytesExport())
                 .export(writer);
-          } catch (ExportLimitExceededException e) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage(), e);
+          } finally {
+            exportPermits.release();
           }
         };
 
@@ -440,5 +480,17 @@ public class LiteratureResource {
         .header(HttpHeaders.CONTENT_DISPOSITION, fileName)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .body(stream);
+  }
+
+  private static org.springframework.web.server.ResponseStatusException tooManyExports() {
+    return new org.springframework.web.server.ResponseStatusException(
+        HttpStatus.TOO_MANY_REQUESTS, "Too many concurrent exports, try again later");
+  }
+
+  @ExceptionHandler(ExportLimitExceededException.class)
+  public ResponseEntity<String> exportLimitExceeded(ExportLimitExceededException e) {
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+        .contentType(MediaType.TEXT_PLAIN)
+        .body(e.getMessage());
   }
 }
