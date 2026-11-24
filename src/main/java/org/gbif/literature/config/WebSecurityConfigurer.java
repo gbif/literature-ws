@@ -54,7 +54,7 @@ public class WebSecurityConfigurer {
     configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type"));
     configuration.setAllowedOrigins(Collections.singletonList("*"));
     configuration.setAllowedMethods(
-      Arrays.asList("HEAD", "GET", "POST", "DELETE", "PUT", "OPTIONS"));
+      Arrays.asList("HEAD", "GET", "OPTIONS"));
     configuration.setExposedHeaders(
       Arrays.asList(
         "Access-Control-Allow-Origin",

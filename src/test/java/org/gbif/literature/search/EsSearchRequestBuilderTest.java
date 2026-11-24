@@ -123,6 +123,18 @@ class EsSearchRequestBuilderTest {
   }
 
   @Test
+  void buildSearchRequest_rejectsInvalidDates() {
+    LiteratureSearchRequest request = new LiteratureSearchRequest();
+    request.addParameter(LiteratureSearchParameter.ADDED, "2024-13-01");
+
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(request, INDEX));
+
+    LiteratureSearchRequest range = new LiteratureSearchRequest();
+    range.addParameter(LiteratureSearchParameter.ADDED, "2024-07-14,2024-08-14");
+    assertNotNull(builder.buildSearchRequest(range, INDEX));
+  }
+
+  @Test
   void buildSearchRequest_highlightEncodesHtml() {
     SearchRequest uiRequest = builder.buildSearchRequest(facetedSearchRequest(), INDEX);
 

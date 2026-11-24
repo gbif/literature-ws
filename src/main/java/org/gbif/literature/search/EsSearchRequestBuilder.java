@@ -22,6 +22,7 @@ import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.Language;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
 import static org.gbif.literature.util.EsQueryUtils.LOWER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_SEPARATOR;
 import static org.gbif.literature.util.EsQueryUtils.RANGE_WILDCARD;
+import static org.gbif.literature.util.EsQueryUtils.STRING_TO_DATE;
 import static org.gbif.literature.util.EsQueryUtils.UPPER_BOUND_RANGE_PARSER;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetLimit;
 import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
@@ -408,9 +410,16 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     List<String> parsedValues = new ArrayList<>();
 
     for (String value : values) {
-      if (isNumericRange(value) || (esFieldMapper.isDateField(esField) && isDateRange(value))) {
-        queries.add(buildRangeQuery(esField, value));
-        continue;
+      try {
+        if (isNumericRange(value) || (esFieldMapper.isDateField(esField) && isDateRange(value))) {
+          queries.add(buildRangeQuery(esField, value));
+          continue;
+        }
+        if (esFieldMapper.isDateField(esField)) {
+          STRING_TO_DATE.apply(value);
+        }
+      } catch (DateTimeParseException e) {
+        throw new IllegalArgumentException("Invalid date: " + value, e);
       }
 
       String parsedValue = parseParamValue(value, param);
