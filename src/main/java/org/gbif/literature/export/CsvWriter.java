@@ -260,7 +260,7 @@ public class CsvWriter<T> {
 
     @Override
     public String execute(Object value, CsvContext context) {
-      return value != null ? CleanStringProcessor.cleanString((String) value) : "";
+      return value != null ? escapeFormula(CleanStringProcessor.cleanString((String) value)) : "";
     }
   }
 
@@ -275,8 +275,13 @@ public class CsvWriter<T> {
 
     @Override
     public String execute(Object value, CsvContext csvContext) {
-      return value != null ? toString((List<String>) value) : "";
+      return value != null ? escapeFormula(toString((List<String>) value)) : "";
     }
+  }
+
+  /** Prefixes values that spreadsheets would evaluate as formulas. */
+  public static String escapeFormula(String value) {
+    return !value.isEmpty() && "=+-@".indexOf(value.charAt(0)) >= 0 ? "'" + value : value;
   }
 
   /** Joins elements using as a delimiter. */
@@ -296,7 +301,7 @@ public class CsvWriter<T> {
 
     @Override
     public String execute(Object value, CsvContext csvContext) {
-      return value != null ? toString(((List<Map<String, Object>>) value)) : "";
+      return value != null ? escapeFormula(toString(((List<Map<String, Object>>) value))) : "";
     }
   }
 
@@ -310,7 +315,7 @@ public class CsvWriter<T> {
 
     @Override
     public String execute(Object value, CsvContext csvContext) {
-      return value != null ? toString(((Map<String, Object>) value)) : "";
+      return value != null ? escapeFormula(toString(((Map<String, Object>) value))) : "";
     }
   }
 
