@@ -45,6 +45,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -102,6 +103,7 @@ public class LiteratureResource {
   private final ElasticsearchClient elasticsearchClient;
   private final EsClientConfigProperties esClientConfigProperties;
   private final LiteratureConfigProperties literatureConfigProperties;
+  private final Semaphore exportPermits;
 
   public LiteratureResource(
       LiteratureSearchService searchService,
@@ -112,6 +114,7 @@ public class LiteratureResource {
     this.elasticsearchClient = elasticsearchClient;
     this.esClientConfigProperties = esClientConfigProperties;
     this.literatureConfigProperties = literatureConfigProperties;
+    this.exportPermits = new Semaphore(literatureConfigProperties.getMaxConcurrentExports());
   }
 
   private static final String REPEATED =
@@ -413,6 +416,11 @@ public class LiteratureResource {
 
     StreamingResponseBody stream =
         outputStream -> {
+          if (!exportPermits.tryAcquire()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                "Too many concurrent exports, try again later");
+          }
           try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
               LiteraturePager pager =
                   new LiteraturePager(
@@ -430,6 +438,8 @@ public class LiteratureResource {
           } catch (ExportLimitExceededException e) {
             throw new org.springframework.web.server.ResponseStatusException(
                 org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage(), e);
+          } finally {
+            exportPermits.release();
           }
         };
 
