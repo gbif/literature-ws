@@ -468,9 +468,6 @@ public class LiteratureResource {
                     literatureConfigProperties.getExportPageSize(),
                     literatureConfigProperties.getBufferLimitBytesExport())
                 .export(writer);
-          } catch (ExportLimitExceededException e) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE, e.getMessage(), e);
           } finally {
             exportPermits.release();
           }

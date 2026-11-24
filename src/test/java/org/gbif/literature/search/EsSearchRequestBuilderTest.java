@@ -13,11 +13,13 @@
  */
 package org.gbif.literature.search;
 
+import org.gbif.api.model.common.paging.PagingRequest;
 import org.gbif.api.model.literature.search.LiteratureSearchParameter;
 import org.gbif.api.model.literature.search.LiteratureSearchRequest;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,6 +119,13 @@ class EsSearchRequestBuilderTest {
     overflow.setFacetLimit(Integer.MAX_VALUE);
     overflow.setFacetOffset(10);
     assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(overflow, INDEX));
+
+    LiteratureSearchRequest wrapping = facetedSearchRequest();
+    wrapping.setFacetPages(
+        Map.of(
+            LiteratureSearchParameter.COUNTRIES_OF_COVERAGE,
+            new PagingRequest((1L << 32) + 5, 10)));
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(wrapping, INDEX));
 
     LiteratureSearchRequest negative = facetedSearchRequest();
     negative.setFacetLimit(-5);
