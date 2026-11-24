@@ -239,14 +239,6 @@ public class CsvWriter<T> {
     }
   }
 
-  /** Null aware UUID processor. */
-  public static class DOIProcessor implements CellProcessor {
-    @Override
-    public String execute(Object value, CsvContext csvContext) {
-      return value != null ? value.toString() : "";
-    }
-  }
-
   /**
    * Produces a String instance clean of delimiter. If the value is null an empty string is
    * returned. Borrowed from Occurrence Downloads!!.
@@ -283,9 +275,10 @@ public class CsvWriter<T> {
     }
   }
 
-  /** Prefixes values that spreadsheets would evaluate as formulas. */
+  /** Prefixes values that spreadsheets would evaluate as formulas, ignoring leading spaces. */
   public static String escapeFormula(String value) {
-    return !value.isEmpty() && "=+-@".indexOf(value.charAt(0)) >= 0 ? "'" + value : value;
+    String trimmed = value.stripLeading();
+    return !trimmed.isEmpty() && "=+-@".indexOf(trimmed.charAt(0)) >= 0 ? "'" + value : value;
   }
 
   /** Joins elements using as a delimiter. */

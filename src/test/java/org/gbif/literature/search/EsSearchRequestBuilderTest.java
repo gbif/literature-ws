@@ -112,6 +112,18 @@ class EsSearchRequestBuilderTest {
   }
 
   @Test
+  void buildSearchRequest_rejectsOverflowingAndNegativeFacetPaging() {
+    LiteratureSearchRequest overflow = facetedSearchRequest();
+    overflow.setFacetLimit(Integer.MAX_VALUE);
+    overflow.setFacetOffset(10);
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(overflow, INDEX));
+
+    LiteratureSearchRequest negative = facetedSearchRequest();
+    negative.setFacetLimit(-5);
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(negative, INDEX));
+  }
+
+  @Test
   void buildSearchRequest_facetMinCountAtLeastOne() {
     LiteratureSearchRequest request = facetedSearchRequest();
     request.setFacetMinCount(0);

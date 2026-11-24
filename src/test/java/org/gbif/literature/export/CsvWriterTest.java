@@ -29,6 +29,8 @@ class CsvWriterTest {
     assertEquals("'@SUM(A1)", CsvWriter.escapeFormula("@SUM(A1)"));
     assertEquals("Plain title", CsvWriter.escapeFormula("Plain title"));
     assertEquals("", CsvWriter.escapeFormula(""));
+    assertEquals("' =HYPERLINK(\"x\")", CsvWriter.escapeFormula(" =HYPERLINK(\"x\")"));
+    assertEquals("   ", CsvWriter.escapeFormula("   "));
   }
 
   @Test

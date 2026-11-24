@@ -32,6 +32,6 @@ public class LiteratureConfigProperties {
   /** Page size for each Elasticsearch export request (PIT + search_after). */
   private int exportPageSize = 500;
 
-  /** Maximum number of exports streamed at the same time. */
+  /** Maximum number of exports streamed at the same time, per instance. Must be at least 1. */
   private int maxConcurrentExports = 4;
 }

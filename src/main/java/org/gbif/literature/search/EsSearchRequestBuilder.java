@@ -374,13 +374,17 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     int maxCardinality = esFieldMapper.getCardinality(esField) != null ?
         esFieldMapper.getCardinality(esField) : Integer.MAX_VALUE;
 
-    int limit = Math.min(facetOffset + facetLimit, maxCardinality);
+    if (facetOffset < 0 || facetLimit < 0) {
+      throw new IllegalArgumentException("Facet offset and limit can't be negative");
+    }
+
+    long limit = Math.min((long) facetOffset + facetLimit, maxCardinality);
 
     if (limit > MAX_SIZE_TERMS_AGGS) {
       throw new IllegalArgumentException(
           "Facets paging is only supported up to " + MAX_SIZE_TERMS_AGGS + " elements");
     }
-    return limit;
+    return (int) limit;
   }
 
   /**

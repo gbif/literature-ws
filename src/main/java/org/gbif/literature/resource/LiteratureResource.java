@@ -116,6 +116,9 @@ public class LiteratureResource {
     this.elasticsearchClient = elasticsearchClient;
     this.esClientConfigProperties = esClientConfigProperties;
     this.literatureConfigProperties = literatureConfigProperties;
+    if (literatureConfigProperties.getMaxConcurrentExports() < 1) {
+      throw new IllegalArgumentException("literature.maxConcurrentExports must be at least 1");
+    }
     this.exportPermits = new Semaphore(literatureConfigProperties.getMaxConcurrentExports());
   }
 
@@ -420,9 +423,19 @@ public class LiteratureResource {
       @Parameter(hidden = true) LiteratureSearchRequest searchRequest,
       @RequestParam(value = "format", defaultValue = "TSV") ExportFormat format) {
 
-    // Fail before streaming, the status can't change once the export has started
-    Long count =
-        searchService.search(ExportRequestSupport.prepareForExport(searchRequest, 0)).getCount();
+    // Count before streaming, the status can't change once the export has started. Records
+    // added between the count and the export can still truncate it. The permit only covers the
+    // count, the stream acquires its own so a cancelled stream can't leak it.
+    if (!exportPermits.tryAcquire()) {
+      throw tooManyExports();
+    }
+    Long count;
+    try {
+      count =
+          searchService.search(ExportRequestSupport.prepareForExport(searchRequest, 0)).getCount();
+    } finally {
+      exportPermits.release();
+    }
     if (count != null && count > literatureConfigProperties.getMaxExportRecords()) {
       throw new ExportLimitExceededException(
           "Export has "
@@ -439,9 +452,7 @@ public class LiteratureResource {
     StreamingResponseBody stream =
         outputStream -> {
           if (!exportPermits.tryAcquire()) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
-                "Too many concurrent exports, try again later");
+            throw tooManyExports();
           }
           try (Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
               LiteraturePager pager =
@@ -472,6 +483,11 @@ public class LiteratureResource {
         .header(HttpHeaders.CONTENT_DISPOSITION, fileName)
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .body(stream);
+  }
+
+  private static org.springframework.web.server.ResponseStatusException tooManyExports() {
+    return new org.springframework.web.server.ResponseStatusException(
+        HttpStatus.TOO_MANY_REQUESTS, "Too many concurrent exports, try again later");
   }
 
   @ExceptionHandler(ExportLimitExceededException.class)
