@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.supercsv.cellprocessor.FmtBool;
-import org.supercsv.cellprocessor.FmtDate;
 import org.supercsv.cellprocessor.Optional;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 import org.supercsv.io.CsvBeanWriter;
@@ -41,7 +40,6 @@ import org.supercsv.prefs.CsvPreference;
 import org.supercsv.quote.AlwaysQuoteMode;
 import org.supercsv.util.CsvContext;
 
-import com.fasterxml.jackson.databind.util.StdDateFormat;
 
 import lombok.Builder;
 import lombok.Data;
@@ -50,8 +48,6 @@ import lombok.SneakyThrows;
 @Data
 @Builder
 public class CsvWriter<T> {
-
-  private static final String DATE_FORMAT_STR_PLAIN = "yyyy-MM-dd";
 
   // Delimiter used for list/array of elements
   public static final String ARRAY_DELIMITER = "|";
@@ -186,7 +182,7 @@ public class CsvWriter<T> {
               new Optional(new CleanStringProcessor()), // title
               new Optional(new AuthorProcessor()), //  authors
               new Optional(new CleanStringProcessor()), // source,
-              new Optional(new FmtDate(DATE_FORMAT_STR_PLAIN)), // published,
+              new Optional(new LocalDateProcessor()), // published,
               new Optional(new FmtBool("true", "false")), // openAccess,
               new Optional(new FmtBool("true", "false")), // peerReview,
               new Optional(new CleanStringProcessor()), // citationType,
@@ -199,7 +195,7 @@ public class CsvWriter<T> {
               new Optional(new UUIDProcessor()), // id,
               new Optional(new CleanStringProcessor()), // abstract,
               new Optional(new SetLiteratureTopicProcessor()), // topics,
-              new Optional(new FmtDate(StdDateFormat.DATE_FORMAT_STR_ISO8601)), // added,
+              new Optional(new LocalDateProcessor()), // added,
               new Optional(new ListStringProcessor()) // gbifDownloadKey
             })
         .preference(preference)
@@ -207,6 +203,14 @@ public class CsvWriter<T> {
         .exportPageLimit(exportPageLimit)
         .maxExportBytes(maxExportBytes)
         .build();
+  }
+
+  /** Null aware LocalDate processor, formatted as yyyy-MM-dd. */
+  public static class LocalDateProcessor implements CellProcessor {
+    @Override
+    public String execute(Object value, CsvContext csvContext) {
+      return value != null ? value.toString() : "";
+    }
   }
 
   /** Null aware UUID processor. */

@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -184,18 +183,17 @@ public class LiteratureSearchResultConverter
     return extractValue(source, fieldName, JsonNode::asBoolean);
   }
 
-  private Optional<Date> extractDateField(JsonNode source, String fieldName) {
+  private Optional<LocalDate> extractDateField(JsonNode source, String fieldName) {
     return extractValue(
       source,
       fieldName,
       node -> {
         try {
           // Try ISO timestamp first
-          return Date.from(Instant.parse(node.asText()));
+          return LocalDate.ofInstant(Instant.parse(node.asText()), ZoneOffset.UTC);
         } catch (Exception e) {
           // Fallback to yyyy-MM-dd
-          LocalDate d = LocalDate.parse(node.asText(), DateTimeFormatter.ISO_LOCAL_DATE);
-          return Date.from(d.atStartOfDay(ZoneOffset.UTC).toInstant());
+          return LocalDate.parse(node.asText(), DateTimeFormatter.ISO_LOCAL_DATE);
         }
       });
   }
