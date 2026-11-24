@@ -38,6 +38,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.HighlighterEncoder;
 
 import static org.gbif.api.util.SearchTypeValidator.isDateRange;
 import static org.gbif.api.util.SearchTypeValidator.isNumericRange;
@@ -54,7 +55,7 @@ import static org.gbif.literature.util.EsQueryUtils.extractFacetOffset;
  */
 public class EsSearchRequestBuilder<P extends SearchParameter> {
 
-  private static final int MAX_SIZE_TERMS_AGGS = 1200000;
+  private static final int MAX_SIZE_TERMS_AGGS = 1000;
   private static final String PRE_HL_TAG = "<em class=\"gbifHl\">";
   private static final String POST_HL_TAG = "</em>";
 
@@ -270,6 +271,7 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
     if (searchRequest.isHighlight()) {
       builder.highlight(h -> h
           .numberOfFragments(0)
+          .encoder(HighlighterEncoder.Html)
           .preTags(PRE_HL_TAG)
           .postTags(POST_HL_TAG)
           .fields("title", f -> f)
@@ -327,7 +329,10 @@ public class EsSearchRequestBuilder<P extends SearchParameter> {
         .terms(t -> t
             .field(esField)
             .size(aggsSize)
-            .minDocCount(searchRequest.getFacetMinCount() != null ? searchRequest.getFacetMinCount() : 1)
+            .minDocCount(
+                searchRequest.getFacetMinCount() != null
+                    ? Math.max(1, searchRequest.getFacetMinCount())
+                    : 1)
         )
     );
   }

@@ -24,11 +24,13 @@ import org.junit.jupiter.api.Test;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.HighlighterEncoder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EsSearchRequestBuilderTest {
@@ -98,6 +100,33 @@ class EsSearchRequestBuilderTest {
         builder.buildExportSearchRequest(request, INDEX, "pit-xyz", cursor);
 
     assertEquals(cursor, exportRequest.searchAfter());
+  }
+
+  @Test
+  void buildSearchRequest_rejectsLargeFacetLimit() {
+    LiteratureSearchRequest request = facetedSearchRequest();
+    request.setFacets(EnumSet.of(LiteratureSearchParameter.GBIF_OCCURRENCE_KEY));
+    request.setFacetLimit(1_000_000);
+
+    assertThrows(IllegalArgumentException.class, () -> builder.buildSearchRequest(request, INDEX));
+  }
+
+  @Test
+  void buildSearchRequest_facetMinCountAtLeastOne() {
+    LiteratureSearchRequest request = facetedSearchRequest();
+    request.setFacetMinCount(0);
+
+    SearchRequest uiRequest = builder.buildSearchRequest(request, INDEX);
+
+    assertEquals(
+        1, uiRequest.aggregations().get("countriesOfCoverage").terms().minDocCount());
+  }
+
+  @Test
+  void buildSearchRequest_highlightEncodesHtml() {
+    SearchRequest uiRequest = builder.buildSearchRequest(facetedSearchRequest(), INDEX);
+
+    assertEquals(HighlighterEncoder.Html, uiRequest.highlight().encoder());
   }
 
   private static LiteratureSearchRequest facetedSearchRequest() {
